@@ -1,0 +1,8 @@
+# Python caches
+*__pycache__
+
+# Vscode workspace
+.vscode
+
+# Internal test
+test.py
