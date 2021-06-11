@@ -1,10 +1,11 @@
+import math
 from pydub import AudioSegment
 from pydub.scipy_effects import eq as equalizer
 from typing import List, Dict
 from ..utils.errors import EqualizerError
 from ..utils.var import ContextVar
 
-class _Frequency:
+class _EqualizerStruct:
     def __init__(self, freq, gain):
         self.freq = freq
         self.gain = gain
@@ -75,22 +76,83 @@ class Equalizer:
         }
 
     def _parse_eqs(self, freqs):
-        eqs = []
+        eqs = {}
         for f in freqs:
-            eqs.append(_Frequency(f['freq'], f['gain']))
+            freq = f['freq']
+            eqs[freq] = _EqualizerStruct(freq, f['gain'])
         return eqs
 
     def _check_freqs(self, freqs):
+        for freq in freqs:
+            # Validate type "freq" in freqs argument
+            if not isinstance(freq['freq'], int):
+                raise ValueError('freq "%s" in %s is not integer type' % (
+                    freq['freq'],
+                    freq
+                ))
+            
+            # Validate type "gain" in freqs argument
+            elif not isinstance(freq['gain'], float):
+                raise ValueError('gain "%s" in %s is not float type' % (
+                    freq['gain'],
+                    freq
+                ))
         unchecked = [i['freq'] for i in freqs]
         checked = []
         for freq in unchecked:
             if freq in checked:
-                raise EqualizerError('frequency %s is more than one')
+                raise EqualizerError('frequency %s is more than one' % (freq))
             else:
                 checked.append(freq)
     
     def add_frequency(self, freq: int, gain: int):
-        pass
+        """
+        Add a frequency, 
+        raise :class:`EqualizerError` if given frequency is already exist.
+        """
+        _ = {"freq": freq, "gain": gain}
+
+        # Is freq and gain type valid ?
+        self._check_freqs([_])
+
+        # Check if given frequency is exist
+        try:
+            eq = self._eqs[freq]
+        except KeyError:
+            eq = _EqualizerStruct(freq, gain)
+            self._eqs.setdefault(freq, eq)
+        else:
+            raise EqualizerError('frequency %s is more than one, use set_gain() instead' % (
+                freq
+            ))
+
+    def remove_equalizer(self, freq: int, gain: int):
+        """
+        Remove a frequency, 
+        raise :class:`EqualizerError` if given frequency is not exist.
+        """
+        _ = {"freq": freq, "gain": gain}
+
+        # Is freq and gain type valid ?
+        self._check_freqs([_])
+
+        # Check if given frequency is exist
+        try:
+            self._eqs.pop(freq)
+        except KeyError:
+            raise EqualizerError('frequency %s is not exist' % (freq))
+
+    def set_gain(self, freq: int, gain: int):
+        _ = {"freq": freq, "gain": gain}
+
+        # Is freq and gain type valid ?
+        self._check_freqs([_])
+
+        # Check if given frequency is exist
+        eq = self._eqs.get(freq)
+        if eq is None:
+            raise EqualizerError('frequency %s is not exist' % (freq))
+        eq.gain = gain
 
     def convert(self, data):
         """
@@ -98,8 +160,64 @@ class Equalizer:
         """
         _ = AudioSegment(data, metadata=self._eq_args)
         ctx = ContextVar(_)
-        for eq in self._eqs:
+        for key in self._eqs.keys():
+            # Get the equalizer
+            eq = self._eqs.get(key)
+
+            # Get the audio segment
             seg = ctx.get()
+
+            # Convert it
             n_seg = equalizer(seg, eq.freq, gain_dB=eq.gain)
+
+            # Set the new converted audio segment
             ctx.set(n_seg)
         return ctx.get().raw_data
+
+class BassEqualizer:
+    """
+    An easy to use equalizer for bass
+
+    The frequency range is from 20Hz to 250Hz.
+
+    **Only PCM codecs support this**
+    
+    volume: :class:`float`
+        Set volume as float percent.
+        For example, 0.5 for 50% and 1.75 for 175%.
+    sample_width: :class:`str`
+        Set sample width for the equalizer.
+        Choices are `8bit`, `16bit`, `32bit`
+    channels: :class:`int`
+        Set channels for the equalizer.
+        Choices are `1` = Mono, and `2` = Stereo.
+    frame_rate: :class:`int`
+        Set frame_rate for the equalizer.
+    """
+    def __init__(self, volume: float, sample_width: str, channels: int, frame_rate: int):
+        self._freqs = []
+        self.volume = volume
+        freqs = []
+        base_freq = 20
+        for _ in range(23):
+            freqs.append({
+                "freq": base_freq,
+                "gain": self.volume
+            })
+            self._freqs.append(base_freq)
+            base_freq += 10
+        self.eq = Equalizer(freqs, sample_width, channels, frame_rate)
+
+    @property
+    def volume(self):
+        return self._volume
+
+    @volume.setter
+    def volume(self, volume):
+        # Adapted from https://github.com/Rapptz/discord.py/blob/master/discord/opus.py#L392
+        self._volume = 20 * math.log10(volume)
+
+    def set_gain(self, volume: float):
+        self.volume = volume
+        for freq in self._freqs:
+            self.eq.set_gain(freq, self.volume)
