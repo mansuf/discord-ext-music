@@ -26,11 +26,6 @@ class Equalizer:
 
     Only PCM codecs support this
 
-    freqs: :class:`List[Dict]`
-        a list containing dicts, each dict has frequency (in Hz) and gain (in dB) inside it.
-        For example, [{"freq": 20, "gain": 20}, ...]
-        You cannot add same frequency in `freqs` argument,
-        if you try to add it, it will raise :class:`EqualizerError`.
     sample_width: :class:`str`
         Set sample width for the equalizer.
         Choices are `8bit`, `16bit`, `32bit`
@@ -39,13 +34,21 @@ class Equalizer:
         Choices are `1` = Mono, and `2` = Stereo.
     frame_rate: :class:`int`
         Set frame_rate for the equalizer.
+    freqs: :class:`List[Dict]` (optional, default: `None`)
+        a list containing dicts, each dict has frequency (in Hz) and gain (in dB) inside it.
+        For example, [{"freq": 20, "gain": 20}, ...]
+        You cannot add same frequency in `freqs` argument,
+        if you try to add it, it will raise :class:`EqualizerError`.
     """
-    def __init__(self, freqs: List[Dict], sample_width: str, channels: int, frame_rate: int):
-        # Check the frequencys
-        self._check_freqs(freqs)
+    def __init__(self, sample_width: str, channels: int, frame_rate: int, freqs: List[Dict]=None):
+        if freqs is not None:
+            # Check the frequencys
+            self._check_freqs(freqs)
 
-        # Parse the equalizers
-        self._eqs = self._parse_eqs(freqs)
+            # Parse the equalizers
+            self._eqs = self._parse_eqs(freqs)
+        else:
+            self._eqs = {}
 
         # Check the sample_width
         try:
@@ -126,7 +129,7 @@ class Equalizer:
                 freq
             ))
 
-    def remove_equalizer(self, freq: int, gain: int):
+    def remove_frequency(self, freq: int, gain: int):
         """
         Remove a frequency, 
         raise :class:`EqualizerError` if given frequency is not exist.
@@ -143,6 +146,10 @@ class Equalizer:
             raise EqualizerError('frequency %s is not exist' % (freq))
 
     def set_gain(self, freq: int, gain: int):
+        """
+        Set frequency gain in dB,
+        raise :class:`EqualizerError` if given frequency is not exist.
+        """
         _ = {"freq": freq, "gain": gain}
 
         # Is freq and gain type valid ?
@@ -160,7 +167,7 @@ class Equalizer:
         """
         _ = AudioSegment(data, metadata=self._eq_args)
         ctx = ContextVar(_)
-        for key in self._eqs.keys():
+        for key in self._eqs:
             # Get the equalizer
             eq = self._eqs.get(key)
 
@@ -214,10 +221,25 @@ class BassEqualizer:
 
     @volume.setter
     def volume(self, volume):
+        # Since given volume 0 will raise error,
+        # try to redirectly changed it to lowest dB
+        if volume == 0.0 or volume == 0:
+            self._volume = -20
+
         # Adapted from https://github.com/Rapptz/discord.py/blob/master/discord/opus.py#L392
         self._volume = 20 * math.log10(volume)
 
     def set_gain(self, volume: float):
+        """
+        Set frequency gain as float percent.
+        For example, 0.5 for 50% and 1.75 for 175%.
+        """
         self.volume = volume
         for freq in self._freqs:
             self.eq.set_gain(freq, self.volume)
+
+    def convert(self, data):
+        """
+        Convert audio data to equalized audio data
+        """
+        return self.eq.convert(data)
