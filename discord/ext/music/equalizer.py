@@ -2,8 +2,8 @@ import math
 from pydub import AudioSegment
 from pydub.scipy_effects import eq as equalizer
 from typing import List, Dict
-from ..utils.errors import EqualizerError
-from ..utils.var import ContextVar
+from .utils.errors import EqualizerError
+from .utils.var import ContextVar
 
 class _EqualizerStruct:
     def __init__(self, freq, gain):
@@ -181,11 +181,11 @@ class Equalizer:
             ctx.set(n_seg)
         return ctx.get().raw_data
 
-class BassEqualizer:
+class SubwooferEqualizer:
     """
     An easy to use equalizer for bass
 
-    The frequency range is from 20Hz to 250Hz.
+    The frequency range is from 20Hz to 60Hz.
 
     **Only PCM codecs support this**
     
@@ -206,7 +206,7 @@ class BassEqualizer:
         self.volume = volume
         freqs = []
         base_freq = 20
-        for _ in range(23):
+        for _ in range(4):
             freqs.append({
                 "freq": base_freq,
                 "gain": self.volume
@@ -221,22 +221,21 @@ class BassEqualizer:
 
     @volume.setter
     def volume(self, volume):
-        # Since given volume 0 will raise error,
+        # Since given volume 0 or lower will raise error,
         # try to redirectly changed it to lowest dB
-        if volume == 0.0 or volume == 0:
+        if volume <= 0:
             self._volume = -20
 
         # Adapted from https://github.com/Rapptz/discord.py/blob/master/discord/opus.py#L392
         self._volume = 20 * math.log10(volume)
 
-    def set_gain(self, volume: float):
+    def set_gain(self, dB: float):
         """
-        Set frequency gain as float percent.
-        For example, 0.5 for 50% and 1.75 for 175%.
+        Set frequency gain in dB.
         """
-        self.volume = volume
         for freq in self._freqs:
-            self.eq.set_gain(freq, self.volume)
+            self.eq.set_gain(freq, dB)
+        self._volume = dB
 
     def convert(self, data):
         """
