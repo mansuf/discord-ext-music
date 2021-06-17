@@ -1,13 +1,16 @@
 import asyncio
 import discord
 import logging
+import sys
 import nacl.secret
 import struct
 import time
+import traceback
 from discord import opus
 from .voice_client import MusicClient
 from .voice_source import MusicSource, Silence
 from .worker import Worker
+from .equalizer import Equalizer
 
 log = logging.getLogger(__name__)
 
@@ -50,13 +53,13 @@ class MusicPlayer:
         self._resumed.set()
         self._destroy_on_dc = destroy_on_disconnect
 
-        if after is not None and not callable(after):
-            raise TypeError('Expected a callable for the "after" parameter.')
+        if after is not None and asyncio.iscoroutinefunction(after) or not callable(after):
+            raise TypeError('Expected a callable or coroutine function for the "after" parameter.')
 
+        self.after = after
         self.encoder = opus.Encoder()
-
-        # Start the process
-        asyncio.ensure_future(self._process(), loop=self._loop)
+        self._player = None
+        self._current_error = None
 
     def checked_add(self, attr, value, limit):
         val = getattr(self, attr)
@@ -100,12 +103,16 @@ class MusicPlayer:
 
         return header + box.encrypt(bytes(data), bytes(nonce)).ciphertext + nonce[:4]
 
-    def _get_audio_packet(self, source, data=None):
+    def _get_audio_packet(self, source):
         self.checked_add('sequence', 1, 65535)
 
-        # Read audio source if not async
-        if not source.is_async():
-            data = source.read(self.encoder.FRAME_SIZE)
+        # Read audio source
+        if source.is_async():
+            coro = source.read()
+            fut = asyncio.run_coroutine_threadsafe(coro, self._loop)
+            data = fut.result()
+        else:
+            data = source.read()
 
         # If audio source is not opus encode it
         if not self.source.is_opus():
@@ -124,32 +131,26 @@ class MusicPlayer:
             log.info('Speaking call in player failed: %s', e)
 
     async def _process_silence(self):
-        writer, reader = self._connection
+        reader, writer = self._connection
         silence = Silence()
         while True:
             # Wait until is set
             await self._silence.wait()
 
-            data = self.
-            writer.write()
-
-
-
-        pass
+            data = await self._worker.submit(lambda: self._get_audio_packet(silence))
+            writer.write(data)
 
     async def _process(self):
-        # Wait until self.play() is called
-        await self._played.wait()
-
         # getattr lookup speed ups
-        writer, reader = self._connection
+        reader, writer = self._connection
+        source = self.source
 
         self.loops = 0
         self.durations = 0
         self._start_time = time.perf_counter()
         await self._speak(True)
 
-        while not self._end.is_set():
+        while self._played.is_set():
             # are we paused?
             if not self._resumed.is_set():
 
@@ -178,14 +179,9 @@ class MusicPlayer:
 
             self.loops += 1
             self.durations += 0.020 # 20ms
-            if self.source.is_async():
-                _ = await self.source.read()
-                data = await self._worker.submit(lambda: self._get_audio_packet(_))
-            else:
-                data = await self._worker.submit(lambda: self._get_audio_packet())
+            data = await self._worker.submit(lambda: self._get_audio_packet(source))
             
             if not data:
-                self.stop()
                 break
 
             writer.write(data)
@@ -197,23 +193,72 @@ class MusicPlayer:
             next_time = self._start_time + self.DELAY * self.loops
             delay = max(0, self.DELAY + (next_time - time.perf_counter()))
             await asyncio.sleep(delay)
-            
+
+        # Flush the buffer
+        await writer.drain()
+
+    async def _call_after(self):
+        pass
+
+    async def _run(self):
+        # Wait until self.play() is called
+        await self._played.wait()
+        after = self.after
+
+        try:
+            await self._process()
+        except Exception as e:
+            self._current_error = e
+        else:
+            # Stop the player
+            self._end.set()
+            self._played.clear()
+            self._paused.clear()
+
+            # Change speak state to False
+            await self._speak(False)
+
+
+
     def play(self):
         self._played.set()
 
     async def stop(self):
-        self._end.set()
-        self._resumed.set()
+        # Stop the player
         self._played.clear()
+
+        # Wait until player is stopped
+        await self._end.wait()
+
+        # set pause event to False
+        self._paused.clear()
+
+        # Change speak state to False
         await self._speak(False)
     
     async def pause(self, play_silence=True):
         # Set resumed to False
         self._resumed.clear()
 
+        if play_silence:
+            # Play silence
+            # https://discord.com/developers/docs/topics/voice-connections#voice-data-interpolation
+            self._silence.set()
+
         # Wait until _process is paused
         await self._paused.wait()
 
-        
+        # Change speak state to False
+        await self._speak(False)
+
+    async def resume(self):
+        # stop silence process
+        self._silence.clear()
+
+        # resume the player
+        self._resumed.set()
+
+        # Change speak state to True
+        await self._speak(True)
 
 

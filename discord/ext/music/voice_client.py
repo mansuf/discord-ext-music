@@ -44,10 +44,9 @@ class MusicClient(VoiceClient):
 
     async def connect(self, *, reconnect: bool, timeout: bool):
         await super().connect(reconnect, timeout)
-        writer, reader = asyncio.open_connection(
+        self._voice_conn = await asyncio.open_connection(
             self.endpoint_ip,
             self.voice_port,
             ssl=True,
             sock=self.socket
         )
-        self._voice_conn = (writer, reader)

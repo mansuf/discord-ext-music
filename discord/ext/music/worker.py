@@ -3,8 +3,8 @@ import asyncio
 from .utils.errors import WorkerError
 from .utils.var import ContextVar
 
-# Set global worker
-_worker = ContextVar()
+# Set music worker
+_music_worker = ContextVar()
 
 class _Worker(threading.Thread):
     class Job:
@@ -14,7 +14,8 @@ class _Worker(threading.Thread):
             self.queue = queue
 
     def __init__(self):
-        self.queue = asyncio.Queue(100)
+        super().__init__()
+        self.queue = asyncio.Queue(1000)
         self.event = threading.Event()
     
     def is_full(self):
@@ -26,6 +27,7 @@ class _Worker(threading.Thread):
             try:
                 job = self.queue.get_nowait()
             except asyncio.QueueEmpty:
+                self.event.clear()
                 continue
             else:
                 fut = job.fut
@@ -54,7 +56,7 @@ class _Worker(threading.Thread):
         exception = fut.exception()
 
         # Raise exception if func is error
-        # during executions
+        # during execution
         if exception is not None:
             raise exception
         
@@ -100,15 +102,15 @@ class Worker:
         worker = self._get_worker()
         return await worker.submit(func)
 
-def get_global_worker() -> Worker:
+def get_music_worker() -> Worker:
     """
-    Return global worker, create one if not exist.
+    Return music worker, create one if not exist.
 
     This worker doesn't have limit,
     if you want to set limit use :class:`Worker` class instead.
 
     This should be used for :class:`MusicClient` or :class:`MusicPlayer` only
     """
-    if _worker.get() is None:
-        _worker.set(Worker())
-    return _worker.get()
+    if _music_worker.get() is None:
+        _music_worker.set(Worker())
+    return _music_worker.get()
