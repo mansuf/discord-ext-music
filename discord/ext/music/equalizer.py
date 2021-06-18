@@ -129,12 +129,12 @@ class Equalizer:
                 freq
             ))
 
-    def remove_frequency(self, freq: int, gain: int):
+    def remove_frequency(self, freq: int):
         """
         Remove a frequency, 
         raise :class:`EqualizerError` if given frequency is not exist.
         """
-        _ = {"freq": freq, "gain": gain}
+        _ = {"freq": freq, "gain": 0}
 
         # Is freq and gain type valid ?
         self._check_freqs([_])

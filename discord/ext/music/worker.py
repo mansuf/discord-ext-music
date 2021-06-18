@@ -63,7 +63,7 @@ class _Worker(threading.Thread):
         # Return the result
         return fut.result()
 
-class Worker:
+class QueueWorker:
     def __init__(self, max_worker=None):
         if max_worker is not None and not isinstance(max_worker, int):
             raise ValueError("max_worker expecting NoneType or int, got %s" % (
@@ -102,7 +102,7 @@ class Worker:
         worker = self._get_worker()
         return await worker.submit(func)
 
-def get_music_worker() -> Worker:
+def get_music_worker() -> QueueWorker:
     """
     Return music worker, create one if not exist.
 
@@ -112,5 +112,5 @@ def get_music_worker() -> Worker:
     This should be used for :class:`MusicClient` or :class:`MusicPlayer` only
     """
     if _music_worker.get() is None:
-        _music_worker.set(Worker())
+        _music_worker.set(QueueWorker())
     return _music_worker.get()
