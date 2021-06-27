@@ -9,7 +9,7 @@ import traceback
 from discord import opus
 from .voice_client import MusicClient
 from .voice_source import MusicSource, Silence
-from .worker import Worker
+from .worker import QueueWorker
 from .equalizer import Equalizer
 
 log = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ class MusicPlayer:
         self,
         source: MusicSource,
         client: MusicClient,
-        worker: Worker,
+        worker: QueueWorker,
         *,
         after=None,
         destroy_on_disconnect=False
@@ -218,10 +218,10 @@ class MusicPlayer:
             # Change speak state to False
             await self._speak(False)
 
-
-
-    def play(self):
-        self._played.set()
+    async def play(self):
+        if self._played.is_set():
+            raise discord.ClientException('Already playing audio')
+        
 
     async def stop(self):
         # Stop the player

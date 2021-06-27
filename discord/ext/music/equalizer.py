@@ -228,6 +228,7 @@ class SubwooferEqualizer:
 
         # Adapted from https://github.com/Rapptz/discord.py/blob/master/discord/opus.py#L392
         self._volume = 20 * math.log10(volume)
+        self.set_gain(self._volume)
 
     def set_gain(self, dB: float):
         """
