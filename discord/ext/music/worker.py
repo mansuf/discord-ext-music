@@ -1,5 +1,7 @@
 import threading
 import asyncio
+import queue
+from concurrent.futures import Future
 from .utils.errors import WorkerError
 from .utils.var import ContextVar
 
@@ -8,49 +10,42 @@ _music_worker = ContextVar()
 
 class _Worker(threading.Thread):
     class Job:
-        def __init__(self, fut, queue, func):
+        def __init__(self, fut,func):
             self.fut = fut
             self.func = func
-            self.queue = queue
 
-    def __init__(self):
-        super().__init__()
-        self.queue = asyncio.Queue(1000)
-        self.event = threading.Event()
+    def __init__(self, limit_job: int=None):
+        threading.Thread.__init__(self)
+        self.setDaemon(True)
+        self.queue = queue.Queue(limit_job or 0)
     
     def is_full(self):
         return self.queue.full()
 
     def run(self):
         while True:
-            self.event.wait()
+            job = self.queue.get()
+            fut = job.fut
+            func = job.func
             try:
-                job = self.queue.get_nowait()
-            except asyncio.QueueEmpty:
-                self.event.clear()
-                continue
-            else:
-                fut = job.fut
-                func = job.func
-                try:
-                    result = func()
-                except Exception as e:
-                    fut.set_exception(e)
-                else:
-                    fut.set_result(result)
-                job.queue.put_nowait(fut)
+                result = func()
+            except Exception as e:
+                fut.set_exception(e)
+            async def complete():
+                fut.set_result(result)
+            if isinstance(fut, asyncio.Future):
+                asyncio.run_coroutine_threadsafe(complete(), fut.get_loop())
+
 
     async def submit(self, func):
-        self.event.set()
-        queue = asyncio.Queue()
         fut = asyncio.Future()
-        job = self.Job(fut, queue, func)
+        job = self.Job(fut, func)
 
         # put in queue
-        await self.queue.put(job)
+        self.queue.put_nowait(job)
 
         # wait until func is finished
-        await queue.get()
+        await fut
 
         # Retrieve the exception
         exception = fut.exception()
@@ -63,15 +58,41 @@ class _Worker(threading.Thread):
         # Return the result
         return fut.result()
 
+    def submit_nowait(self, func):
+        fut = Future()
+        job = self.Job(fut, func)
+
+        # put in queue
+        self.queue.put_nowait(job)
+
+        return fut
+
 class QueueWorker:
-    def __init__(self, max_worker=None):
+    """
+    A Queue worker used for asynchronous computation
+
+    Parameters
+    ------------
+    max_worker: :class:`int` (Optional, default: `None`)
+        Set maximum worker for QueueWorker
+        if worker reached its limit, it will raise :class:`WorkerError`
+    max_limit_job: :class:`int` (Optional, default: `None`)
+        Set maximum limit job for each worker
+    """
+    def __init__(self, max_worker: int=None, max_limit_job: int=None):
         if max_worker is not None and not isinstance(max_worker, int):
             raise ValueError("max_worker expecting NoneType or int, got %s" % (
                 type(max_worker)
             ))
+        if max_limit_job is not None and not isinstance(max_limit_job, int):
+            raise ValueError("max_limit_job expecting NoneType or int, got %s" % (
+                type(max_limit_job)
+            ))
         self._max_worker = max_worker
+        self._max_limit_job = max_limit_job
         self._current_workers = 0
         self._workers = []
+        self._lock = threading.Lock()
 
     def _get_worker(self):
         if self._current_workers == 0:
@@ -86,7 +107,7 @@ class QueueWorker:
         if self._max_worker is not None:
             if self._current_workers + 1 > self._max_worker:
                 raise WorkerError('Worker is full')
-        t = _Worker()
+        t = _Worker(self._max_limit_job)
         t.start()
         self._workers.append(t)
         self._current_workers += 1
@@ -94,13 +115,33 @@ class QueueWorker:
 
     async def submit(self, func: lambda: callable):
         """
-        submit a job
+        |coro|
 
+        submit a job and wait until it finished
+
+        Parameters
+        -----------
         func: :class:`lambda` or `callable`
             a callable function or lambda
         """
-        worker = self._get_worker()
+        with self._lock:
+            worker = self._get_worker()
         return await worker.submit(func)
+
+    def submit_nowait(self, func: lambda: callable):
+        """
+        submit a job without waiting until finished
+
+        Parameters
+        -----------
+        func: :class:`lambda` or `callable`
+            a callable function or lambda
+
+        Return :class:`concurrent.futures.Future`
+        """
+        with self._lock:
+            worker = self._get_worker()
+        return worker.submit_nowait(func)
 
 def get_music_worker() -> QueueWorker:
     """

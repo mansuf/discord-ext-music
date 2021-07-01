@@ -1,17 +1,24 @@
+import queue
 import sys
 import discord
 import asyncio
 import logging
-import miniaudio
 import audioop
 import shlex
 import json
+import io
 import re
 import time
 from io import IOBase
 from discord.opus import _OpusStruct as OpusEncoder
-from .utils.errors import IllegalSeek
 from asyncio import subprocess
+from ..utils.errors import IllegalSeek
+from .oggparse import AsyncOggStream
+from ..worker import QueueWorker
+from ..equalizer import PCMEqualizer
+
+# This was used for RawPCMAudio source
+pcm_worker = QueueWorker(max_limit_job=5)
 
 if sys.platform != 'win32':
     CREATE_NO_WINDOW = 0
@@ -69,25 +76,6 @@ class MusicSource(discord.AudioSource):
         """
         raise NotImplementedError()
 
-class AsyncMusicSource(MusicSource):
-    """
-    Same like :class:`MusicSource`, but it async process
-    """
-    async def set_volume(self, volume: float):
-        raise NotImplementedError()
-
-    async def seek(self, seconds: float):
-        raise NotImplementedError()
-
-    async def rewind(self, seconds: float):
-        raise NotImplementedError()
-    
-    async def read(self):
-        raise NotImplementedError()
-
-    async def cleanup(self):
-        raise NotImplementedError()
-
 class Silence(MusicSource):
     def read(self):
         return bytearray([0xF8, 0xFF, 0xFE])
@@ -99,6 +87,14 @@ class AsyncSilence(Silence):
 class RawPCMAudio(MusicSource):
     """Represents raw 16-bit 48KHz stereo PCM audio source.
 
+    Parameters
+    ------------
+    data: :class:`IOBase`
+        file-like object
+    volume: :class:`float` (Optional, default: `0.5`)
+        Set initial volume for AudioSource
+    eq_stabilize: :class:``
+
     Attributes
     -----------
     stream: :term:`py:file object`
@@ -109,19 +105,87 @@ class RawPCMAudio(MusicSource):
     IllegalSeek
         current stream doesn't support seek() operations
     """
-    def __init__(self, stream: IOBase, volume=0.5):
+    def __init__(
+        self,
+        stream: IOBase,
+        volume: float=0.5,
+        eq_stabilize: bool=True,
+        worker: QueueWorker=None
+    ):
         self.stream = stream
-        self._durations = max(volume, 0.0)
-        self._volume = volume
+        self._durations = 0
+        self._eq = None
+        self._stabilize = eq_stabilize
+        self._worker = worker
+        self._buffered_eq = None
+        self._buffered_eq_queue = queue.Queue(20)
+        self._volume = max(volume, 0.0)
 
     def read(self):
-        data = self.stream.read(OpusEncoder.FRAME_SIZE)
-        if len(data) != OpusEncoder.FRAME_SIZE:
-            return b''
-        self._durations += 0.020 # 20ms
-        # Adapted from 
-        # https://github.com/Rapptz/discord.py/blob/master/discord/player.py#L542
-        return audioop.mul(data, 2, min(self._volume, 2.0))
+        while True:
+            if self._eq is not None:
+                # At this point if AudioSource using PCMEqualizer,
+                # the equalizer cannot convert audio if duration is too small (ex: 20ms)
+                # they will reproduce weird sound.
+                # So the AudioSource must read audio data at least for 1 second
+                # and then equalize it and move it to buffered equalized audio data.
+                # The MusicPlayer will read audio data from buffered equalized audio data.
+
+                def equalize(self, result=False):
+                    # The source will read the stream at least 1 second duration
+                    data = self.stream.read(OpusEncoder.FRAME_SIZE * 50) # 1 second duration
+
+                    # Return "exhausted" bytes to prevent re-reading stream
+                    if not data:
+                        return io.BytesIO(b'exhausted')
+
+                    # And then convert / equalize it
+                    eq_data = self._eq.convert(data)
+
+                    # Store it in buffered equalized audio data
+                    buffered_eq = io.BytesIO(eq_data)
+
+                    if result:
+                        return buffered_eq
+
+                    try:
+                        self._buffered_eq_queue.put_nowait(buffered_eq)
+                    except queue.Full:
+                        pass
+
+                worker = self._worker or pcm_worker
+                if self._buffered_eq is None:
+                    # If :param:`eq_stabilize` is set to `True`
+                    # Equalizing audio data will be done in another :class:`QueueWorker`
+                    if self._stabilize:
+                        fut = worker.submit_nowait(lambda: equalize(self))
+                        self._buffered_eq = self._buffered_eq_queue.get()
+                    else:
+                        self._buffered_eq = equalize(self, True)
+
+                # Read the buffered equalized audio data
+                data = self._buffered_eq.read(OpusEncoder.FRAME_SIZE)
+                
+                if not data:
+                    self._buffered_eq = None
+                    continue
+                elif len(data) != OpusEncoder.FRAME_SIZE:
+                    return b''
+                self._durations += 0.020 # 20ms
+                return audioop.mul(data, 2, min(self._volume, 2.0))
+            else:
+                if self._buffered_eq is not None:
+                    # Make sure that buffered eq is exhausted
+                    data = self._buffered_eq.read(OpusEncoder.FRAME_SIZE)
+                    if not data:
+                        self._buffered_eq = None
+                        continue
+                else:
+                    data = self.stream.read(OpusEncoder.FRAME_SIZE)
+                if len(data) != OpusEncoder.FRAME_SIZE:
+                    return b''
+                self._durations += 0.020 # 20ms
+                return audioop.mul(data, 2, min(self._volume, 2.0))
     
     def cleanup(self):
         self.stream.close()
@@ -135,8 +199,11 @@ class RawPCMAudio(MusicSource):
     def set_volume(self, volume: float):
         self._volume = max(volume, 0.0)
 
+    def set_equalizer(self, eq: PCMEqualizer=None):
+        self._eq = eq
+
     # -------------------------------------------
-    # Formula seek and rewind for RawPCMAudio
+    # Formula seek and rewind for PCM-based Audio
     # -------------------------------------------
     #
     # Finding seekable positions IO
@@ -210,7 +277,7 @@ class RawPCMAudio(MusicSource):
         # Change current stream durations
         self._durations = c_pos / 1000 * 20 / OpusEncoder.FRAME_SIZE
 
-class AsyncFFmpegAudio(AsyncMusicSource):
+class AsyncFFmpegAudio(MusicSource):
     """
     Same like :class:`discord.player.FFmpegAudio` but its async operations
 
@@ -225,7 +292,14 @@ class AsyncFFmpegAudio(AsyncMusicSource):
         self._process = self._stdout = None
         self._loop = loop or asyncio.get_event_loop()
 
-        args = [executable, *args]
+        # This was used for seek(), set_volume() and rewind() operations
+        # when one of that method is being called
+        # another one method will be blocked until is finished
+        # because this audio source stream cannot be seek() directly
+        # it can be manipulated by changing source with seek argument
+        self._lock = asyncio.Lock()
+
+        args = [*args]
         kwargs = {'stdout': asyncio.subprocess.PIPE, 'loop': loop}
         kwargs.update(subprocess_kwargs)
 
@@ -237,7 +311,7 @@ class AsyncFFmpegAudio(AsyncMusicSource):
         process = None
         try:
             process = await asyncio.create_subprocess_exec(
-                "",
+                self._executable,
                 *args,
                 creationflags=CREATE_NO_WINDOW,
                 **kwargs
@@ -281,103 +355,8 @@ class AsyncFFmpegAudio(AsyncMusicSource):
 
         self._process = self._stdout = None
 
-class AsyncFFmpegPCMAudio(AsyncFFmpegAudio):
-    """
-    An audio source from FFmpeg (or AVConv).
-
-    This launches a sub-process to a specific input file given.
-
-    .. warning::
-        You must have the ffmpeg or avconv executable in your path environment
-        variable in order for this to work.
-
-    Note
-    ------
-    you will have to call `spawn()` in order for this to work.
-
-    The asyncio event loop must support subprocess,
-    see https://docs.python.org/3/library/asyncio-platforms.html#asyncio-windows-subprocess
-
-    Parameters
-    ------------
-    source: Union[:class:`str`, :class:`io.BufferedIOBase`]
-        The input that ffmpeg will take and convert to PCM bytes.
-        If ``pipe`` is ``True`` then this is a file-like object that is
-        passed to the stdin of ffmpeg.
-    executable: :class:`str`
-        The executable name (and path) to use. Defaults to ``ffmpeg``.
-    volume: :class:`float`
-        Set initial volume for AudioSource, defaults to `0.5`
-    loop: :class:`asyncio.AbstractEventLoop`
-        The asyncio event loop, defaults to `None`
-    pipe: :class:`bool`
-        If ``True``, denotes that ``source`` parameter will be passed
-        to the stdin of ffmpeg. Defaults to ``False``.
-    stderr: Optional[:term:`py:file object`]
-        A file-like object to pass to the Popen constructor.
-        Could also be an instance of ``subprocess.PIPE``.
-    before_options: Optional[:class:`str`]
-        Extra command line arguments to pass to ffmpeg before the ``-i`` flag.
-    options: Optional[:class:`str`]
-        Extra command line arguments to pass to ffmpeg after the ``-i`` flag.
-        
-    Raises
-    --------
-    ClientException
-        The subprocess failed to be created.
-    """
-    def __init__(
-        self,
-        source,
-        *,
-        executable='ffmpeg',
-        volume=0.5,
-        loop=None,
-        pipe=False,
-        stderr=None,
-        before_options=None,
-        options=None
-    ):
-        self._durations = 0
-        self._volume = volume
-
-        # This was used for seek(), set_volume() and rewind() operations
-        # when one of that method is being called
-        # another one method will be blocked until is finished
-        # because this audio source stream cannot be seek() directly
-        # it can be manipulated by changing source with seek argument
-        self._lock = asyncio.Lock()
-
-        args = []
-        subprocess_kwargs = {'stdin': source if pipe else asyncio.subprocess.DEVNULL, 'stderr': stderr}
-
-        if isinstance(before_options, str):
-            args.extend(shlex.split(before_options))
-
-        args.append('-i')
-        args.append('-' if pipe else source)
-        args.extend(('-filter:a', '%s' % volume))
-        args.extend(('-f', 's16le', '-ar', '48000', '-ac', '2', '-loglevel', 'warning'))
-
-        if isinstance(options, str):
-            args.extend(shlex.split(options))
-
-        args.append('pipe:1')
-
-        super().__init__(source, executable=executable, loop=loop, args=args, **subprocess_kwargs)
-
-    async def read(self):
-        ret = await self._stdout.read(OpusEncoder.FRAME_SIZE)
-        if len(ret) != OpusEncoder.FRAME_SIZE:
-            return b''
-        self._durations += 0.020 # 20ms
-        return ret
-
     def get_stream_durations(self):
         return self._durations
-
-    def is_opus(self):
-        return False
 
     def is_async(self):
         return True
@@ -412,7 +391,7 @@ class AsyncFFmpegPCMAudio(AsyncFFmpegAudio):
             self._volume = volume
 
     # ----------------------------------------------
-    # Formula seek and rewind for AsyncFFmpegPCMAudio
+    # Formula seek and rewind for AsyncFFmpegAudio
     # ----------------------------------------------
     # 
     # NOTE: AsyncFFmpegPCMAudio cannot be seek and rewind
@@ -423,7 +402,7 @@ class AsyncFFmpegPCMAudio(AsyncFFmpegAudio):
     # (for playing silence audio while re-creating subprocess ffmpeg) to old source
     # to prevent errors to the MusicPlayer while playing audio
     #
-    # Formula seek and rewind for AsyncFFmpegPCMAudio
+    # Formula seek and rewind for AsyncFFmpegAudio
     # 
     # [*] First, give seconds (from how many you want to seek and rewind
     # as a parameter for seek() and rewind().
@@ -434,7 +413,7 @@ class AsyncFFmpegPCMAudio(AsyncFFmpegAudio):
     # time string (00:00:00) using time module.
     # [*] Fifth, Create new subprocess ffmpeg with seek argument from 
     # readable time string.
-    # [*] Sixth, move the new AsyncFFmpegPCMAudio to the current source.
+    # [*] Sixth, move the new AsyncFFmpegAudio to the current source.
     # [*] Seventh, Done.
 
     async def seek(self, seconds: float):
@@ -497,19 +476,113 @@ class AsyncFFmpegPCMAudio(AsyncFFmpegAudio):
             # Change current stream durations
             self._durations -= seconds
 
+    def __del__(self):
+        asyncio.ensure_future(self.cleanup())
+
+class AsyncFFmpegPCMAudio(AsyncFFmpegAudio):
+    """
+    An audio source from FFmpeg (or AVConv).
+
+    This launches a sub-process to a specific input file given.
+
+    .. warning::
+        You must have the ffmpeg or avconv executable in your path environment
+        variable in order for this to work.
+
+    Note
+    ------
+    You will have to call `spawn()` in order for this to work.
+
+    The asyncio event loop must support subprocess,
+    see https://docs.python.org/3/library/asyncio-platforms.html#asyncio-windows-subprocess.
+
+    Parameters
+    ------------
+    source: Union[:class:`str`, :class:`io.BufferedIOBase`]
+        The input that ffmpeg will take and convert to PCM bytes.
+        If ``pipe`` is ``True`` then this is a file-like object that is
+        passed to the stdin of ffmpeg.
+    executable: :class:`str`
+        The executable name (and path) to use. Defaults to ``ffmpeg``.
+    volume: :class:`float`
+        Set initial volume for AudioSource, defaults to `0.5`
+    loop: :class:`asyncio.AbstractEventLoop`
+        The asyncio event loop, defaults to `None`
+    pipe: :class:`bool`
+        If ``True``, denotes that ``source`` parameter will be passed
+        to the stdin of ffmpeg. Defaults to ``False``.
+    stderr: Optional[:term:`py:file object`]
+        A file-like object to pass to the Popen constructor.
+        Could also be an instance of ``subprocess.PIPE``.
+    before_options: Optional[:class:`str`]
+        Extra command line arguments to pass to ffmpeg before the ``-i`` flag.
+    options: Optional[:class:`str`]
+        Extra command line arguments to pass to ffmpeg after the ``-i`` flag.
+        
+    Raises
+    --------
+    ClientException
+        The subprocess failed to be created.
+    """
+    def __init__(
+        self,
+        source,
+        *,
+        executable='ffmpeg',
+        volume=0.5,
+        loop=None,
+        pipe=False,
+        stderr=None,
+        before_options=None,
+        options=None
+    ):
+        self._durations = 0
+        self._volume = volume
+
+        # This was used for seek(), set_volume() and rewind() operations
+        # when one of that method is being called
+        # another one method will be blocked until is finished
+        # because this audio source stream cannot be seek() directly
+        # it can be manipulated by changing source with seek argument
+        self._lock = asyncio.Lock()
+
+        args = []
+        subprocess_kwargs = {'stdin': source if pipe else asyncio.subprocess.DEVNULL, 'stderr': stderr}
+
+        if isinstance(before_options, str):
+            args.extend(shlex.split(before_options))
+
+        args.append('-i')
+        args.append('-' if pipe else source)
+        args.extend(('-filter:a', 'volume=%s' % volume))
+        args.extend(('-f', 's16le', '-ar', '48000', '-ac', '2', '-loglevel', 'warning'))
+
+        if isinstance(options, str):
+            args.extend(shlex.split(options))
+
+        args.append('pipe:1')
+
+        super().__init__(source, executable=executable, loop=loop, args=args, **subprocess_kwargs)
+
+    async def read(self):
+        ret = await self._stdout.read(OpusEncoder.FRAME_SIZE)
+        if len(ret) != OpusEncoder.FRAME_SIZE:
+            return b''
+        self._durations += 0.020 # 20ms
+        return ret
+
+    def is_opus(self):
+        return False
+
 class AsyncFFmpegOpusAudio(AsyncFFmpegAudio):
-    """An audio source from FFmpeg (or AVConv).
+    """
+    Same like :class:`discord.player.FFmpegOpusAudio`, but it doesn't accept `codec` paramater.
+
+    An audio source from FFmpeg (or AVConv).
 
     This launches a sub-process to a specific input file given.  However, rather than
     producing PCM packets like :class:`FFmpegPCMAudio` does that need to be encoded to
     Opus, this class produces Opus packets, skipping the encoding step done by the library.
-
-    Alternatively, instead of instantiating this class directly, you can use
-    :meth:`AsyncFFmpegOpusAudio.from_probe` to probe for bitrate and codec information.  This
-    can be used to opportunistically skip pointless re-encoding of existing Opus audio data
-    for a boost in performance at the cost of a short initial delay to gather the information.
-    The same can be achieved by passing ``copy`` to the ``codec`` parameter, but only if you
-    know that the input source is Opus encoded beforehand.
 
     .. versionadded:: 1.3
 
@@ -520,10 +593,10 @@ class AsyncFFmpegOpusAudio(AsyncFFmpegAudio):
 
     Note
     ------
-    you will have to call `spawn()` in order for this to work.
+    You will have to call `spawn()` in order for this to work.
 
     The asyncio event loop must support subprocess,
-    see https://docs.python.org/3/library/asyncio-platforms.html#asyncio-windows-subprocess
+    see https://docs.python.org/3/library/asyncio-platforms.html#asyncio-windows-subprocess.
 
     Parameters
     ------------
@@ -533,19 +606,6 @@ class AsyncFFmpegOpusAudio(AsyncFFmpegAudio):
         passed to the stdin of ffmpeg.
     bitrate: :class:`int`
         The bitrate in kbps to encode the output to.  Defaults to ``128``.
-    codec: Optional[:class:`str`]
-        The codec to use to encode the audio data.  Normally this would be
-        just ``libopus``, but is used by :meth:`AsyncFFmpegOpusAudio.from_probe` to
-        opportunistically skip pointlessly re-encoding Opus audio data by passing
-        ``copy`` as the codec value.  Any values other than ``copy``, ``opus``, or
-        ``libopus`` will be considered ``libopus``.  Defaults to ``libopus``.
-
-        .. warning::
-
-            Do not provide this parameter unless you are certain that the audio input is
-            already Opus encoded.  For typical use :meth:`AsyncFFmpegOpusAudio.from_probe`
-            should be used to determine the proper value for this parameter.
-
     executable: :class:`str`
         The executable name (and path) to use. Defaults to ``ffmpeg``.
     volume: :class:`float`
@@ -574,7 +634,6 @@ class AsyncFFmpegOpusAudio(AsyncFFmpegAudio):
         source,
         *,
         bitrate=128,
-        codec=None,
         executable='ffmpeg',
         volume=0.5,
         loop=None,
@@ -595,12 +654,9 @@ class AsyncFFmpegOpusAudio(AsyncFFmpegAudio):
         args.append('-i')
         args.append('-' if pipe else source)
 
-        codec = 'copy' if codec in ('opus', 'libopus') else 'libopus'
-
-        args.extend(('-filter:a', '%s' % volume))
+        args.extend(('-filter:a', 'volume=%s' % volume))
         args.extend(('-map_metadata', '-1',
                      '-f', 'opus',
-                     '-c:a', codec,
                      '-ar', '48000',
                      '-ac', '2',
                      '-b:a', '%sk' % bitrate,
@@ -620,6 +676,9 @@ class AsyncFFmpegOpusAudio(AsyncFFmpegAudio):
         A factory method that creates a :class:`AsyncFFmpegOpusAudio` after probing
         the input source for audio codec and bitrate information.
 
+        You will no need to call `spawn()` after calling this function,
+        this function will automatically call `spawn()` after probing.
+
         Examples
         ----------
 
@@ -634,14 +693,14 @@ class AsyncFFmpegOpusAudio(AsyncFFmpegAudio):
             source = await discord.AsyncFFmpegOpusAudio.from_probe("song.webm", method='fallback')
             voice_client.play(source)
 
-        Using a custom method of determining codec and bitrate: ::
+        Using a custom method of determining bitrate: ::
 
             # NOTE: custom method must be coroutine function otherwise it will raise error
 
             async def custom_probe(source, executable):
                 # some analysis code here
 
-                return codec, bitrate
+                return bitrate
 
             source = await discord.AsyncFFmpegOpusAudio.from_probe("song.webm", method=custom_probe)
             voice_client.play(source)
@@ -658,7 +717,7 @@ class AsyncFFmpegOpusAudio(AsyncFFmpegAudio):
             ``executable`` will default to ``ffmpeg`` if not provided as a keyword argument.
         kwargs
             The remaining parameters to be passed to the :class:`AsyncFFmpegOpusAudio` constructor,
-            excluding ``bitrate`` and ``codec``.
+            excluding ``bitrate``.
 
         Raises
         --------
@@ -674,8 +733,10 @@ class AsyncFFmpegOpusAudio(AsyncFFmpegAudio):
         """
 
         executable = kwargs.get('executable')
-        codec, bitrate = await cls.probe(source, method=method, executable=executable)
-        return cls(source, bitrate=bitrate, codec=codec, **kwargs)
+        bitrate = await cls.probe(source, method=method, executable=executable)
+        probe = cls(source, bitrate=bitrate, **kwargs)
+        await probe.spawn()
+        return probe
 
     @classmethod
     async def probe(cls, source, *, method=None, executable=None):
@@ -697,7 +758,7 @@ class AsyncFFmpegOpusAudio(AsyncFFmpegAudio):
         AttributeError
             Invalid probe method, must be ``'native'`` or ``'fallback'``.
         TypeError
-            Invalid value for ``probe`` parameter, must be :class:`str` or a callable.
+            Invalid value for ``probe`` parameter, must be :class:`str` or a coroutine function.
 
         Returns
         ---------
@@ -724,10 +785,9 @@ class AsyncFFmpegOpusAudio(AsyncFFmpegAudio):
             raise TypeError("Expected str or coroutine function for parameter 'probe', " \
                             "not '{0.__class__.__name__}'" .format(method))
 
-        codec = bitrate = None
-        loop = asyncio.get_event_loop()
+        bitrate = None
         try:
-            codec, bitrate = await probefunc(source, executable)
+            bitrate = await probefunc(source, executable)
         except Exception:
             if not fallback:
                 log.exception("Probe '%s' using '%s' failed", method, executable)
@@ -735,20 +795,20 @@ class AsyncFFmpegOpusAudio(AsyncFFmpegAudio):
 
             log.exception("Probe '%s' using '%s' failed, trying fallback", method, executable)
             try:
-                codec, bitrate = await fallback(source, executable)
+                bitrate = await fallback(source, executable)
             except Exception:
                 log.exception("Fallback probe using '%s' failed", executable)
             else:
-                log.info("Fallback probe found codec=%s, bitrate=%s", codec, bitrate)
+                log.info("Fallback probe found bitrate=%s", bitrate)
         else:
-            log.info("Probe found codec=%s, bitrate=%s", codec, bitrate)
+            log.info("Probe found bitrate=%s", bitrate)
         finally:
-            return codec, bitrate
+            return bitrate
 
     @staticmethod
     async def _probe_codec_native(source, executable='ffmpeg'):
         exe = executable[:2] + 'probe' if executable in ('ffmpeg', 'avconv') else executable
-        args = [exe, '-v', 'quiet', '-print_format', 'json', '-show_streams', '-select_streams', 'a:0', source]
+        args = ['-v', 'quiet', '-print_format', 'json', '-show_streams', '-select_streams', 'a:0', source]
         proc = await subprocess.create_subprocess_exec(
             exe,
             *args,
@@ -758,21 +818,20 @@ class AsyncFFmpegOpusAudio(AsyncFFmpegAudio):
         )
         out, _ = await asyncio.wait_for(proc.communicate(), 20)
         output = out.decode('utf8')
-        codec = bitrate = None
+        bitrate = None
 
         if output:
             data = json.loads(output)
             streamdata = data['streams'][0]
 
-            codec = streamdata.get('codec_name')
             bitrate = int(streamdata.get('bit_rate', 0))
             bitrate = max(round(bitrate/1000, 0), 512)
 
-        return codec, bitrate
+        return bitrate
 
     @staticmethod
     async def _probe_codec_fallback(source, executable='ffmpeg'):
-        args = [executable, '-hide_banner', '-i',  source]
+        args = ['-hide_banner', '-i',  source]
         proc = await subprocess.create_subprocess_exec(
             executable,
             *args,
@@ -783,14 +842,27 @@ class AsyncFFmpegOpusAudio(AsyncFFmpegAudio):
         out, _ = await asyncio.wait_for(proc.communicate(), 20)
         
         output = out.decode('utf8')
-        codec = bitrate = None
-
-        codec_match = re.search(r"Stream #0.*?Audio: (\w+)", output)
-        if codec_match:
-            codec = codec_match.group(1)
+        bitrate = None
 
         br_match = re.search(r"(\d+) [kK]b/s", output)
         if br_match:
             bitrate = max(int(br_match.group(1)), 512)
 
-        return codec, bitrate
+        return bitrate
+
+    async def spawn(self):
+        await super().spawn()
+        stream = AsyncOggStream(self._stdout)
+        self._packet_iter = stream.iter_packets()
+
+    async def read(self):
+        try:        
+            ret = await self._packet_iter.__anext__()
+        except StopAsyncIteration:
+            return b''
+        else:
+            self._durations += 0.020 # 20ms
+            return ret
+
+    def is_opus(self):
+        return True

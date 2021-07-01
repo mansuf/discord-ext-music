@@ -22,3 +22,15 @@ class IllegalSeek(Exception):
     when stream doesn't support seek() operations
     """
     pass
+
+class InvalidMP3(Exception):
+    """
+    Raised when audio data is not mp3 format
+    """
+    pass
+
+class MiniaudioError(Exception):
+    """
+    Raised when something happened in miniaudio module
+    """
+    pass

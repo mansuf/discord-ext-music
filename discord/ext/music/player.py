@@ -10,7 +10,7 @@ from discord import opus
 from .voice_client import MusicClient
 from .voice_source import MusicSource, Silence
 from .worker import QueueWorker
-from .equalizer import Equalizer
+from .equalizer import PCMEqualizer
 
 log = logging.getLogger(__name__)
 
@@ -18,7 +18,6 @@ class MusicPlayer:
     """
     Play music asynchronously
     """
-
     DELAY = opus.Encoder.FRAME_LENGTH / 1000.0
 
     def __init__(
@@ -31,11 +30,13 @@ class MusicPlayer:
         destroy_on_disconnect=False
     ):
         self.secret_key = client.secret_key
+        self.ssrc = client.ssrc
+        self.mode = client.mode
         self.client = client
         self.sequence = 0
+        self.sock = client.socket
         self.timestamp = 0
         self.source = source
-        self._connection = client._voice_conn
         self._endpoint_ip = client.endpoint_ip
         self._endpoint_port = client.voice_port
         self._worker = worker
@@ -53,12 +54,14 @@ class MusicPlayer:
         self._resumed.set()
         self._destroy_on_dc = destroy_on_disconnect
 
-        if after is not None and asyncio.iscoroutinefunction(after) or not callable(after):
-            raise TypeError('Expected a callable or coroutine function for the "after" parameter.')
+        if after is not None:
+            if not asyncio.iscoroutinefunction(after) or not callable(after):
+                raise TypeError('Expected a callable or coroutine function for the "after" parameter.')
 
         self.after = after
         self.encoder = opus.Encoder()
-        self._player = None
+        self._player = asyncio.ensure_future(self._run(), loop=self._loop)
+        # self._silence_player = asyncio.ensure_future(self._process_silence(), loop=self._loop)
         self._current_error = None
 
     def checked_add(self, attr, value, limit):
@@ -142,8 +145,8 @@ class MusicPlayer:
 
     async def _process(self):
         # getattr lookup speed ups
-        reader, writer = self._connection
         source = self.source
+        # breakpoint()
 
         self.loops = 0
         self.durations = 0
@@ -180,11 +183,11 @@ class MusicPlayer:
             self.loops += 1
             self.durations += 0.020 # 20ms
             data = await self._worker.submit(lambda: self._get_audio_packet(source))
-            
+
             if not data:
                 break
-
-            writer.write(data)
+            
+            self.sock.sendto(data, (self._endpoint_ip, self._endpoint_port))
             self.checked_add('timestamp', opus.Encoder.SAMPLES_PER_FRAME, 4294967295)
 
             # Adapted from discord.js 
@@ -195,7 +198,7 @@ class MusicPlayer:
             await asyncio.sleep(delay)
 
         # Flush the buffer
-        await writer.drain()
+        # await writer.drain()
 
     async def _call_after(self):
         pass
@@ -221,6 +224,7 @@ class MusicPlayer:
     async def play(self):
         if self._played.is_set():
             raise discord.ClientException('Already playing audio')
+        self._played.set()
         
 
     async def stop(self):

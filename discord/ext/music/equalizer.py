@@ -20,27 +20,19 @@ _SAMPLE_WIDTH = {
 # Valid channels from pydub
 _CHANNELS = [1,2]
 
-class Equalizer:
+class PCMEqualizer:
     """
     Equalizer class
 
-    Only PCM codecs support this
+    Only PCM codecs (16-bit 48KHz) support this
 
-    sample_width: :class:`str`
-        Set sample width for the equalizer.
-        Choices are `8bit`, `16bit`, `32bit`
-    channels: :class:`int`
-        Set channels for the equalizer.
-        Choices are `1` = Mono, and `2` = Stereo.
-    frame_rate: :class:`int`
-        Set frame_rate for the equalizer.
     freqs: :class:`List[Dict]` (optional, default: `None`)
         a list containing dicts, each dict has frequency (in Hz) and gain (in dB) inside it.
         For example, [{"freq": 20, "gain": 20}, ...]
-        You cannot add same frequency in `freqs` argument,
+        You cannot add same frequencys,
         if you try to add it, it will raise :class:`EqualizerError`.
     """
-    def __init__(self, sample_width: str, channels: int, frame_rate: int, freqs: List[Dict]=None):
+    def __init__(self, freqs: List[Dict]=None):
         if freqs is not None:
             # Check the frequencys
             self._check_freqs(freqs)
@@ -50,25 +42,10 @@ class Equalizer:
         else:
             self._eqs = {}
 
-        # Check the sample_width
-        try:
-            self._sample_width = _SAMPLE_WIDTH[sample_width]
-        except KeyError:
-            raise EqualizerError('"%s" is not valid sample_width, choices are %s' % (
-                sample_width,
-                _SAMPLE_WIDTH
-            ))
-
-        # Check the channels
-        if channels not in _CHANNELS:
-            raise EqualizerError('"%s" is not valid channels, choices are %s' % (
-                channels,
-                _CHANNELS
-            ))
-
-        # Check the frame_rate
-        if not isinstance(frame_rate, int):
-            raise EqualizerError('frame_rate expecting int, got %s' % (type(frame_rate)))
+        # PCM 16-bit 48000Hz Configurations
+        sample_width = _SAMPLE_WIDTH["16bit"]
+        channels = 2
+        frame_rate = 48000
 
         # For AudioSegment arguments
         self._eq_args = {
@@ -108,6 +85,14 @@ class Equalizer:
             else:
                 checked.append(freq)
     
+    def _determine_bandwidth(self, freq):
+        if freq < 20:
+            return freq
+        elif freq < 60:
+            return freq + 10
+        else:
+            return 100
+
     def add_frequency(self, freq: int, gain: int):
         """
         Add a frequency, 
@@ -174,46 +159,39 @@ class Equalizer:
             # Get the audio segment
             seg = ctx.get()
 
+            # Determine the bandwidth
+            bandwidth = self._determine_bandwidth(eq.freq)
+
             # Convert it
-            n_seg = equalizer(seg, eq.freq, gain_dB=eq.gain)
+            n_seg = equalizer(seg, eq.freq, bandwidth, gain_dB=eq.gain)
 
             # Set the new converted audio segment
             ctx.set(n_seg)
         return ctx.get().raw_data
 
-class SubwooferEqualizer:
+class SubwooferPCMEqualizer:
     """
     An easy to use equalizer for bass
 
-    The frequency range is from 20Hz to 60Hz.
+    The frequency range is 60Hz.
 
     **Only PCM codecs support this**
     
     volume: :class:`float`
-        Set volume as float percent.
+        Set initial volume as float percent.
         For example, 0.5 for 50% and 1.75 for 175%.
-    sample_width: :class:`str`
-        Set sample width for the equalizer.
-        Choices are `8bit`, `16bit`, `32bit`
-    channels: :class:`int`
-        Set channels for the equalizer.
-        Choices are `1` = Mono, and `2` = Stereo.
-    frame_rate: :class:`int`
-        Set frame_rate for the equalizer.
     """
-    def __init__(self, volume: float, sample_width: str, channels: int, frame_rate: int):
+    def __init__(self, volume: float):
         self._freqs = []
         self.volume = volume
         freqs = []
-        base_freq = 20
-        for _ in range(4):
-            freqs.append({
-                "freq": base_freq,
-                "gain": self.volume
-            })
-            self._freqs.append(base_freq)
-            base_freq += 10
-        self.eq = Equalizer(freqs, sample_width, channels, frame_rate)
+        base_freq = 60
+        freqs.append({
+            "freq": base_freq,
+            "gain": self.volume
+        })
+        self._freqs.append(base_freq)
+        self.eq = PCMEqualizer(freqs)
 
     @property
     def volume(self):
@@ -224,7 +202,9 @@ class SubwooferEqualizer:
         # Since given volume 0 or lower will raise error,
         # try to redirectly changed it to lowest dB
         if volume <= 0:
-            self._volume = -20
+            self._volume = -20.0
+            self.set_gain(self._volume)
+            return
 
         # Adapted from https://github.com/Rapptz/discord.py/blob/master/discord/opus.py#L392
         self._volume = 20 * math.log10(volume)
