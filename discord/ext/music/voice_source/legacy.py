@@ -12,10 +12,24 @@ import time
 from io import IOBase
 from discord.opus import _OpusStruct as OpusEncoder
 from asyncio import subprocess
-from ..utils.errors import IllegalSeek
 from .oggparse import AsyncOggStream
+from ..utils.errors import EqualizerError, IllegalSeek
 from ..worker import QueueWorker
-from ..equalizer import PCMEqualizer
+
+# Try to import equalizer module
+try:
+    from ..equalizer import PCMEqualizer, Equalizer
+    EQ_OK = True
+except EqualizerError:
+    # If failed to import equalizer module
+    # Re-create Equalizer class with no methods
+    class Equalizer:
+        def convert(self):
+            raise NotImplementedError
+    class PCMEqualizer(Equalizer):
+        pass
+    EQ_OK = False
+    
 
 # This was used for RawPCMAudio source
 pcm_worker = QueueWorker(max_limit_job=5)
@@ -30,7 +44,7 @@ log = logging.getLogger(__name__)
 class MusicSource(discord.AudioSource):
     """
     same like :class:`discord.AudioSource`, but its have
-    seek, rewind, and volume built-in to AudioSource
+    seek, rewind, equalizer and volume built-in to AudioSource
     """
     def is_async(self):
         """
@@ -76,6 +90,94 @@ class MusicSource(discord.AudioSource):
         """
         raise NotImplementedError()
 
+    def set_equalizer(self, equalizer: Equalizer=None):
+        """
+        Set a equalizer to MusicSource.
+
+        You must have `scipy` installed in order to use equalizer.
+        """
+        raise NotImplementedError()
+
+class AsyncMusicSource(MusicSource):
+    """
+    same like :class:`MusicSource` but its async operations.
+    """
+    async def read(self):
+        """
+        |coro|
+
+        Reads 20ms worth of audio.
+
+        Subclasses must implement this.
+
+        If the audio is complete, then returning an empty
+        :term:`py:bytes-like object` to signal this is the way to do so.
+
+        If :meth:`is_opus` method returns ``True``, then it must return
+        20ms worth of Opus encoded audio. Otherwise, it must be 20ms
+        worth of 16-bit 48KHz stereo PCM, which is about 3,840 bytes
+        per frame (20ms worth of audio).
+
+        Returns
+        --------
+        :class:`bytes`
+            A bytes like object that represents the PCM or Opus data.
+        """
+        raise NotImplementedError()
+
+    async def cleanup(self):
+        """
+        |coro|
+
+        Called when clean-up is needed to be done.
+
+        Useful for clearing buffer data or processes after
+        it is done playing audio.
+        """
+        pass
+
+    async def seek(self, seconds: float):
+        """
+        |coro|
+
+        Jump forward to specified durations
+        """
+        raise NotImplementedError()
+    
+    async def rewind(self, seconds: float):
+        """
+        |coro|
+
+        Jump rewind to specified durations
+        """
+        raise NotImplementedError()
+
+    async def set_volume(self, volume: float):
+        """
+        |coro|
+
+        Set volume in float percentage
+
+        For example, 0.5 = 50%, 1.5 = 150%
+        """
+        raise NotImplementedError()
+
+    async def set_equalizer(self, equalizer: Equalizer=None):
+        """
+        |coro|
+
+        Set a equalizer to MusicSource.
+
+        You must have `scipy` installed in order to use equalizer.
+        """
+        raise NotImplementedError()
+
+    def is_async(self):
+        return True
+
+    def __del__(self):
+        asyncio.ensure_future(self.cleanup())
+
 class Silence(MusicSource):
     def read(self):
         return bytearray([0xF8, 0xFF, 0xFE])
@@ -93,7 +195,13 @@ class RawPCMAudio(MusicSource):
         file-like object
     volume: :class:`float` (Optional, default: `0.5`)
         Set initial volume for AudioSource
-    eq_stabilize: :class:``
+    eq_stabilize: :class:`bool` (Optional, default: `True`)
+        If `True` then audio reading with equalizer will be done
+        in another :class:`QueueWorker`. But if :class:`RawPCMAudio` doesn't
+        have equalizer then audio reading will be done in current :class:`QueueWorker`
+    worker: :class:`QueueWorker` (Optional, default: `None`)
+        if :param:`eq_stabilize` is `True` then this worker will be used for
+        reading audio with equalizer in order to improve performance
 
     Attributes
     -----------
@@ -124,12 +232,11 @@ class RawPCMAudio(MusicSource):
     def read(self):
         while True:
             if self._eq is not None:
-                # At this point if AudioSource using PCMEqualizer,
+                # At this point if RawPCMAudio using PCMEqualizer,
                 # the equalizer cannot convert audio if duration is too small (ex: 20ms)
                 # they will reproduce weird sound.
-                # So the AudioSource must read audio data at least for 1 second
+                # So the RawPCMAudio must read audio data at least for 1 second
                 # and then equalize it and move it to buffered equalized audio data.
-                # The MusicPlayer will read audio data from buffered equalized audio data.
 
                 def equalize(self, result=False):
                     # The source will read the stream at least 1 second duration
@@ -165,7 +272,7 @@ class RawPCMAudio(MusicSource):
 
                 # Read the buffered equalized audio data
                 data = self._buffered_eq.read(OpusEncoder.FRAME_SIZE)
-                
+
                 if not data:
                     self._buffered_eq = None
                     continue
@@ -200,6 +307,11 @@ class RawPCMAudio(MusicSource):
         self._volume = max(volume, 0.0)
 
     def set_equalizer(self, eq: PCMEqualizer=None):
+        if not EQ_OK:
+            raise EqualizerError('scipy need to be installed in order to use equalizer')
+        if eq is not None:
+            if not isinstance(eq, PCMEqualizer):
+                raise EqualizerError('{0.__class__.__name__} is not PCMEqualizer'.format(eq))
         self._eq = eq
 
     # -------------------------------------------
@@ -277,7 +389,7 @@ class RawPCMAudio(MusicSource):
         # Change current stream durations
         self._durations = c_pos / 1000 * 20 / OpusEncoder.FRAME_SIZE
 
-class AsyncFFmpegAudio(MusicSource):
+class AsyncFFmpegAudio(AsyncMusicSource):
     """
     Same like :class:`discord.player.FFmpegAudio` but its async operations
 
@@ -330,7 +442,7 @@ class AsyncFFmpegAudio(MusicSource):
         try:
             self._process = await self._spawn_process(self._args, **self._kwargs)
         except NotImplementedError:
-            raise discord.ClientException('current event loop doesn\'t support subprocess')
+            raise discord.ClientException('current event loop doesn\'t support subprocess') from None
         else:
             self._stdout = self._process.stdout
 

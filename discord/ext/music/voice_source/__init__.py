@@ -1,3 +1,8 @@
+__all__ = (
+    'MusicSource', 'Silence', 'AsyncSilence', 'RawPCMAudio',
+    'AsyncFFmpegAudio', 'AsyncFFmpegPCMAudio', 'AsyncFFmpegOpusAudio'
+)
+
 from .legacy import (
     MusicSource,
     Silence,
@@ -6,9 +11,4 @@ from .legacy import (
     AsyncFFmpegAudio,
     AsyncFFmpegPCMAudio,
     AsyncFFmpegOpusAudio,
-)
-
-__all__ = (
-    'MusicSource', 'Silence', 'AsyncSilence', 'RawPCMAudio',
-    'AsyncFFmpegAudio', 'AsyncFFmpegPCMAudio', 'AsyncFFmpegOpusAudio'
 )

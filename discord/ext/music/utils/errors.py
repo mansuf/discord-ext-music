@@ -29,6 +29,12 @@ class InvalidMP3(Exception):
     """
     pass
 
+class InvalidFLAC(Exception):
+    """
+    Raised when audio data is not flac format
+    """
+    pass
+
 class MiniaudioError(Exception):
     """
     Raised when something happened in miniaudio module

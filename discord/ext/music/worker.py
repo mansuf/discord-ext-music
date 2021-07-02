@@ -153,5 +153,5 @@ def get_music_worker() -> QueueWorker:
     This should be used for :class:`MusicClient` or :class:`MusicPlayer` only
     """
     if _music_worker.get() is None:
-        _music_worker.set(QueueWorker())
+        _music_worker.set(QueueWorker(max_limit_job=10))
     return _music_worker.get()

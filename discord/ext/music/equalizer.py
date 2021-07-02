@@ -1,9 +1,14 @@
 import math
 from pydub import AudioSegment
-from pydub.scipy_effects import eq as equalizer
 from typing import List, Dict
 from .utils.errors import EqualizerError
 from .utils.var import ContextVar
+
+# Try to import eq function in pydub module
+try:
+    from pydub.scipy_effects import eq as equalizer
+except ImportError:
+    raise EqualizerError('scipy need to be installed in order to use equalizer') from None
 
 class _EqualizerStruct:
     def __init__(self, freq, gain):
@@ -20,7 +25,21 @@ _SAMPLE_WIDTH = {
 # Valid channels from pydub
 _CHANNELS = [1,2]
 
-class PCMEqualizer:
+class Equalizer:
+    """
+    Equalizer class
+
+    This was used for converting original data to equalized audio data
+    """
+    def convert(self, data: bytes):
+        """
+        Convert audio data
+
+        Subclass must implement this.
+        """
+        raise NotImplementedError()
+
+class PCMEqualizer(Equalizer):
     """
     Equalizer class
 
@@ -85,13 +104,12 @@ class PCMEqualizer:
             else:
                 checked.append(freq)
     
-    def _determine_bandwidth(self, freq):
-        if freq < 20:
-            return freq
-        elif freq < 60:
-            return freq + 10
-        else:
-            return 100
+    def _determine_bandwidth(self, freqs):
+        if len(freqs) == 1:
+            return freqs[0]
+        max_freq = max(freqs)
+        min_freq = min(freqs)
+        return max_freq - min_freq
 
     def add_frequency(self, freq: int, gain: int):
         """
@@ -152,15 +170,16 @@ class PCMEqualizer:
         """
         _ = AudioSegment(data, metadata=self._eq_args)
         ctx = ContextVar(_)
+
+        # Determine the bandwidth
+        bandwidth = self._determine_bandwidth(list(self._eqs))
+
         for key in self._eqs:
             # Get the equalizer
             eq = self._eqs.get(key)
 
             # Get the audio segment
             seg = ctx.get()
-
-            # Determine the bandwidth
-            bandwidth = self._determine_bandwidth(eq.freq)
 
             # Convert it
             n_seg = equalizer(seg, eq.freq, bandwidth, gain_dB=eq.gain)
@@ -169,9 +188,9 @@ class PCMEqualizer:
             ctx.set(n_seg)
         return ctx.get().raw_data
 
-class SubwooferPCMEqualizer:
+class SubwooferPCMEqualizer(PCMEqualizer):
     """
-    An easy to use equalizer for bass
+    An easy to use PCMEqualizer for subwoofer
 
     The frequency range is 60Hz.
 
