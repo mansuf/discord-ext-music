@@ -117,12 +117,15 @@ class MusicPlayer:
         else:
             data = source.read()
 
+        if not data:
+            return b''
+
         # If audio source is not opus encode it
         if not self.source.is_opus():
             encoded_data = self.encoder.encode(data, self.encoder.SAMPLES_PER_FRAME)
         else:
             encoded_data = data
-    
+        print('ENCODED DATA', len(encoded_data))
         # Wrap the audio packet
         packet = self._wrap_packet(encoded_data)
         return packet
@@ -195,6 +198,7 @@ class MusicPlayer:
             # delay = self.DELAY + self.loops * self.DELAY
             next_time = self._start_time + self.DELAY * self.loops
             delay = max(0, self.DELAY + (next_time - time.perf_counter()))
+            # print(delay)
             await asyncio.sleep(delay)
 
         # Flush the buffer
@@ -211,6 +215,7 @@ class MusicPlayer:
         try:
             await self._process()
         except Exception as e:
+            print(e)
             self._current_error = e
         else:
             # Stop the player

@@ -5,6 +5,7 @@ import asyncio
 import logging
 import audioop
 import shlex
+import wave
 import json
 import io
 import re
@@ -29,10 +30,15 @@ except EqualizerError:
     class PCMEqualizer(Equalizer):
         pass
     EQ_OK = False
-    
+
+__all__ = (
+    'MusicSource', 'AsyncMusicSource', 'Silence',
+    'AsyncSilence', 'RawPCMAudio', 'AsyncFFmpegAudio',
+    'AsyncFFmpegPCMAudio', 'AsyncFFmpegOpusAudio'
+)
 
 # This was used for RawPCMAudio source
-pcm_worker = QueueWorker(max_limit_job=5)
+pcm_worker = QueueWorker(max_limit_job=2)
 
 if sys.platform != 'win32':
     CREATE_NO_WINDOW = 0
@@ -191,13 +197,13 @@ class RawPCMAudio(MusicSource):
 
     Parameters
     ------------
-    data: :class:`IOBase`
+    stream: :class:`io.BufferedIOBase`
         file-like object
-    volume: :class:`float` (Optional, default: `0.5`)
+    volume: :class:`float` or :class:`NoneType` (Optional, default: `0.5`)
         Set initial volume for AudioSource
     eq_stabilize: :class:`bool` (Optional, default: `True`)
         If `True` then audio reading with equalizer will be done
-        in another :class:`QueueWorker`. But if :class:`RawPCMAudio` doesn't
+        in another :class:`QueueWorker`. But if :class:`RawPCMAudio` don't
         have equalizer then audio reading will be done in current :class:`QueueWorker`
     worker: :class:`QueueWorker` (Optional, default: `None`)
         if :param:`eq_stabilize` is `True` then this worker will be used for
@@ -234,7 +240,7 @@ class RawPCMAudio(MusicSource):
             if self._eq is not None:
                 # At this point if RawPCMAudio using PCMEqualizer,
                 # the equalizer cannot convert audio if duration is too small (ex: 20ms)
-                # they will reproduce weird sound.
+                # they will reproduce noisy sound.
                 # So the RawPCMAudio must read audio data at least for 1 second
                 # and then equalize it and move it to buffered equalized audio data.
 
@@ -388,6 +394,53 @@ class RawPCMAudio(MusicSource):
 
         # Change current stream durations
         self._durations = c_pos / 1000 * 20 / OpusEncoder.FRAME_SIZE
+
+class WavAudio(RawPCMAudio):
+    """
+    Represents wav audio stream
+
+    stream: :class:`io.BufferedIOBase`
+        file-like object
+    volume: :class:`float` or :class:`NoneType` (Optional, default: `0.5`)
+        Set initial volume for AudioSource
+    kwargs:
+        These parameters will be passed in :class:`RawPCMAudio`
+
+    """
+    def __init__(self, stream: io.IOBase, volume: float=0.5, **kwargs):
+        # Check if this stream is wav format
+        new_stream = self._check_wav(stream)
+        super().__init__(new_stream, volume, **kwargs)
+
+    def _check_wav_spec(self, wav):
+        channels = wav.getnchannels() == 2
+        sample_width = wav.getsampwidth() == 2
+        frame_rate = wav.getframerate() == 48000
+        return channels, sample_width, frame_rate
+
+    def _check_wav(self, stream):
+        converted = io.BytesIO()
+        info = wave.open(stream, 'rb')
+        output = wave.open(converted, 'wb')
+
+        # If one of wav specifications (16-bit 48KHz) 
+        # doesn't meet then convert it
+        if False in self._check_wav_spec(info):
+            output.setnchannels(2)
+            output.setsampwidth(2)
+            output.setframerate(48000)
+
+        # Read the old stream and write it to new stream
+        data = stream.read()
+        output.writeframesraw(data)
+
+        # Close the wave file
+        info.close()
+        output.close()
+
+        # Jump to 0 pos
+        converted.seek(0, 0)
+        return converted
 
 class AsyncFFmpegAudio(AsyncMusicSource):
     """

@@ -35,6 +35,12 @@ class InvalidFLAC(Exception):
     """
     pass
 
+class InvalidVorbis(Exception):
+    """
+    Raised when audio data is not vorbis codec
+    """
+    pass
+
 class MiniaudioError(Exception):
     """
     Raised when something happened in miniaudio module

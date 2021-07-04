@@ -1,15 +1,6 @@
 import asyncio
 import io
-import queue
-import audioop
-from discord.opus import _OpusStruct as OpusEncoder
-from .legacy import (
-    RawPCMAudio,
-    MusicSource,
-    pcm_worker,
-    Equalizer,
-    PCMEqualizer
-)
+from .legacy import RawPCMAudio
 from ..worker import QueueWorker
 from ..utils.errors import *
 
@@ -27,10 +18,12 @@ class MP3toPCMAudio(RawPCMAudio):
 
     Note
     ------
+    You must have `miniaudio` installed in order this to work.
+
     When you initiate this class, the audio data will automatically coverted to pcm.
     This may cause all asynchronous process is blocked by this process.
     If you want to avoid this, use :class:`MP3toPCMAudio.from_data` or 
-    :class:`MP3toPCMAudio.from_file`
+    :class:`MP3toPCMAudio.from_file`.
 
     Parameters
     ------------
@@ -38,6 +31,8 @@ class MP3toPCMAudio(RawPCMAudio):
         MP3 bytes data
     volume: :class:`float`
         Set initial volume for AudioSource
+    kwargs:
+        These parameters will be passed in :class:`RawPCMAudio`
 
     Attributes
     -----------
@@ -79,8 +74,7 @@ class MP3toPCMAudio(RawPCMAudio):
             c_data = await worker.submit(lambda: cls._decode(data))
         else:
             c_data = await loop.run_in_executor(None, lambda: cls._decode(data))
-        mp3 = cls(c_data, volume, converted=True)
-        return mp3
+        return cls(c_data, volume, converted=True)
 
     @classmethod
     async def from_file(cls, filename: str, volume: float=0.5, worker: QueueWorker=None):
@@ -107,8 +101,7 @@ class MP3toPCMAudio(RawPCMAudio):
             c_data = await worker.submit(lambda: read_data(cls, filename))
         else:
             c_data = await loop.run_in_executor(None, lambda: read_data(cls, filename))
-        mp3 = cls(c_data, volume, converted=True)
-        return mp3
+        return cls(c_data, volume, converted=True)
 
 
     def _decode(self, data):
@@ -130,6 +123,8 @@ class FLACtoPCMAudio(RawPCMAudio):
 
     Note
     ------
+    You must have `miniaudio` installed in order this to work.
+
     When you initiate this class, the audio data will automatically coverted to pcm.
     This may cause all asynchronous process is blocked by this process.
     If you want to avoid this, use :class:`FLACtoPCMAudio.from_data` or 
@@ -141,6 +136,8 @@ class FLACtoPCMAudio(RawPCMAudio):
         FLAC bytes data
     volume: :class:`float`
         Set initial volume for AudioSource
+    kwargs:
+        These parameters will be passed in :class:`RawPCMAudio`
 
     Attributes
     -----------
@@ -216,6 +213,110 @@ class FLACtoPCMAudio(RawPCMAudio):
             miniaudio.flac_get_info(data)
         except miniaudio.DecodeError:
             raise InvalidFLAC('The audio data is not flac format') from None
+
+        return miniaudio.decode(data, sample_rate=48000).samples.tobytes()
+
+    def seekable(self):
+        return True
+
+class VorbistoPCMAudio(RawPCMAudio):
+    """
+    Represents vorbis to PCM audio source.
+
+    This audio source will convert vorbis to pcm format (16-bit 48KHz).
+
+    Note
+    ------
+    You must have `miniaudio` installed in order this to work.
+
+    When you initiate this class, the audio data will automatically coverted to pcm.
+    This may cause all asynchronous process is blocked by this process.
+    If you want to avoid this, use :class:`VorbistoPCMAudio.from_data` or 
+    :class:`VorbistoPCMAudio.from_file`
+
+    Parameters
+    ------------
+    data: :class:`bytes`
+        Vorbis bytes data
+    volume: :class:`float`
+        Set initial volume for AudioSource
+    kwargs:
+        These parameters will be passed in :class:`RawPCMAudio`
+
+    Attributes
+    -----------
+    stream: :term:`py:file object`
+        A file-like object that reads byte data representing raw PCM.
+
+    Raises
+    --------
+    InvalidVorbis
+        The audio data is not vorbis codec
+    """
+    def __init__(self, data: bytes, volume: float=0.5, **kwargs):
+        converted = kwargs.get('converted')
+        if not converted:
+            decoded_data = self._decode(data)
+        else:
+            kwargs.pop('converted')
+            decoded_data = data
+        super().__init__(io.BytesIO(decoded_data), volume, **kwargs)
+
+    @classmethod
+    async def from_data(cls, data: bytes, volume: float=0.5, worker: QueueWorker=None):
+        """
+        |coro|
+
+        Asynchronously convert vorbis data to pcm.
+
+        Parameters
+        ------------
+        data: :class:`bytes`
+            Vorbis bytes data
+        volume: :class:`float` (default: `0.5`)
+            Set initial volume for AudioSource
+        worker: :class:`QueueWorker` (default: `None`)
+            Set a :class:`QueueWorker` to convert the audio data
+        """
+        loop = asyncio.get_event_loop()
+        if worker is not None:
+            c_data = await worker.submit(lambda: cls._decode(data))
+        else:
+            c_data = await loop.run_in_executor(None, lambda: cls._decode(data))
+        return cls(c_data, volume, converted=True)
+
+    @classmethod
+    async def from_file(cls, filename: str, volume: float=0.5, worker: QueueWorker=None):
+        """
+        |coro|
+
+        Asynchronously convert vorbis data to pcm.
+
+        Parameters
+        ------------
+        filename: :class:`str`
+            Vorbis File
+        volume: :class:`float` (default: `0.5`)
+            Set initial volume for AudioSource
+        worker: :class:`QueueWorker` (default: `None`)
+            Set a :class:`QueueWorker` to convert the audio data
+        """
+        def read_data(cls, filename):
+            with open(filename, 'rb') as o:
+                data = o.read()
+            return cls._decode(data)
+        loop = asyncio.get_event_loop()
+        if worker is not None:
+            c_data = await worker.submit(lambda: read_data(cls, filename))
+        else:
+            c_data = await loop.run_in_executor(None, lambda: read_data(cls, filename))
+        return cls(c_data, volume, converted=True)
+
+    def _decode(self, data):
+        try:
+            miniaudio.vorbis_get_info(data)
+        except miniaudio.DecodeError:
+            raise InvalidVorbis('The audio data is not vorbis codec') from None
 
         return miniaudio.decode(data, sample_rate=48000).samples.tobytes()
 

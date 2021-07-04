@@ -35,6 +35,8 @@ class _Worker(threading.Thread):
                 fut.set_result(result)
             if isinstance(fut, asyncio.Future):
                 asyncio.run_coroutine_threadsafe(complete(), fut.get_loop())
+            else:
+                fut.set_result(result)
 
 
     async def submit(self, func):
