@@ -46,3 +46,15 @@ class MiniaudioError(Exception):
     Raised when something happened in miniaudio module
     """
     pass
+
+class LibAVError(Exception):
+    """
+    Raised when something happened in LibAV stream
+    """
+    pass
+
+class TrackNotExist(Exception):
+    """
+    Raised when track is trying to be removed while it not exist
+    """
+    pass

@@ -1,7 +1,6 @@
 import asyncio
 import io
 from .legacy import RawPCMAudio
-from ..worker import QueueWorker
 from ..utils.errors import *
 
 # Try to import miniaudio module
@@ -54,7 +53,7 @@ class MP3toPCMAudio(RawPCMAudio):
         super().__init__(io.BytesIO(decoded_data), volume, **kwargs)
 
     @classmethod
-    async def from_data(cls, data: bytes, volume: float=0.5, worker: QueueWorker=None):
+    async def from_data(cls, data: bytes, volume: float=0.5, loop: asyncio.AbstractEventLoop=None):
         """
         |coro|
 
@@ -64,20 +63,17 @@ class MP3toPCMAudio(RawPCMAudio):
         ------------
         data: :class:`bytes`
             MP3 bytes data
-        volume: :class:`float` (default: `0.5`)
-            Set initial volume for AudioSource
-        worker: :class:`QueueWorker` (default: `None`)
-            Set a :class:`QueueWorker` to convert the audio data
+        volume: :class:`float`
+            Set initial volume for AudioSource, default to `0.5`
+        loop: :class:`asyncio.AbstractEventLoop`
+            The asyncio event loop, default to `None`
         """
-        loop = asyncio.get_event_loop()
-        if worker is not None:
-            c_data = await worker.submit(lambda: cls._decode(data))
-        else:
-            c_data = await loop.run_in_executor(None, lambda: cls._decode(data))
+        loop = loop or asyncio.get_event_loop()
+        c_data = await loop.run_in_executor(None, lambda: cls._decode(data))
         return cls(c_data, volume, converted=True)
 
     @classmethod
-    async def from_file(cls, filename: str, volume: float=0.5, worker: QueueWorker=None):
+    async def from_file(cls, filename: str, volume: float=0.5, loop: asyncio.AbstractEventLoop=None):
         """
         |coro|
 
@@ -87,20 +83,17 @@ class MP3toPCMAudio(RawPCMAudio):
         ------------
         filename: :class:`str`
             MP3 File
-        volume: :class:`float` (default: `0.5`)
-            Set initial volume for AudioSource
-        worker: :class:`QueueWorker` (default: `None`)
-            Set a :class:`QueueWorker` to convert the audio data
+        volume: :class:`float`
+            Set initial volume for AudioSource, default to `0.5`
+        loop: :class:`asyncio.AbstractEventLoop`
+            The asyncio event loop, default to `None`
         """
         def read_data(cls, filename):
             with open(filename, 'rb') as o:
                 data = o.read()
             return cls._decode(data)
-        loop = asyncio.get_event_loop()
-        if worker is not None:
-            c_data = await worker.submit(lambda: read_data(cls, filename))
-        else:
-            c_data = await loop.run_in_executor(None, lambda: read_data(cls, filename))
+        loop = loop or asyncio.get_event_loop()
+        c_data = await loop.run_in_executor(None, lambda: read_data(cls, filename))
         return cls(c_data, volume, converted=True)
 
 
@@ -159,7 +152,7 @@ class FLACtoPCMAudio(RawPCMAudio):
         super().__init__(io.BytesIO(decoded_data), volume, **kwargs)
 
     @classmethod
-    async def from_data(cls, data: bytes, volume: float=0.5, worker: QueueWorker=None):
+    async def from_data(cls, data: bytes, volume: float=0.5, loop: asyncio.AbstractEventLoop=None):
         """
         |coro|
 
@@ -169,20 +162,17 @@ class FLACtoPCMAudio(RawPCMAudio):
         ------------
         data: :class:`bytes`
             FLAC bytes data
-        volume: :class:`float` (default: `0.5`)
-            Set initial volume for AudioSource
-        worker: :class:`QueueWorker` (default: `None`)
-            Set a :class:`QueueWorker` to convert the audio data
+        volume: :class:`float`
+            Set initial volume for AudioSource, default to `0.5`
+        loop: :class:`asyncio.AbstractEventLoop`
+            The asyncio event loop, default to `None`
         """
-        loop = asyncio.get_event_loop()
-        if worker is not None:
-            c_data = await worker.submit(lambda: cls._decode(data))
-        else:
-            c_data = await loop.run_in_executor(None, lambda: cls._decode(data))
+        loop = loop or asyncio.get_event_loop()
+        c_data = await loop.run_in_executor(None, lambda: cls._decode(data))
         return cls(c_data, volume, converted=True)
 
     @classmethod
-    async def from_file(cls, filename: str, volume: float=0.5, worker: QueueWorker=None):
+    async def from_file(cls, filename: str, volume: float=0.5, loop: asyncio.AbstractEventLoop=None):
         """
         |coro|
 
@@ -192,20 +182,17 @@ class FLACtoPCMAudio(RawPCMAudio):
         ------------
         filename: :class:`str`
             FLAC File
-        volume: :class:`float` (default: `0.5`)
-            Set initial volume for AudioSource
-        worker: :class:`QueueWorker` (default: `None`)
-            Set a :class:`QueueWorker` to convert the audio data
+        volume: :class:`float`
+            Set initial volume for AudioSource, default to `0.5`
+        loop: :class:`asyncio.AbstractEventLoop`
+            The asyncio event loop, default to `None`
         """
         def read_data(cls, filename):
             with open(filename, 'rb') as o:
                 data = o.read()
             return cls._decode(data)
-        loop = asyncio.get_event_loop()
-        if worker is not None:
-            c_data = await worker.submit(lambda: read_data(cls, filename))
-        else:
-            c_data = await loop.run_in_executor(None, lambda: read_data(cls, filename))
+        loop = loop or asyncio.get_event_loop()
+        c_data = await loop.run_in_executor(None, lambda: read_data(cls, filename))
         return cls(c_data, volume, converted=True)
 
     def _decode(self, data):
@@ -263,7 +250,7 @@ class VorbistoPCMAudio(RawPCMAudio):
         super().__init__(io.BytesIO(decoded_data), volume, **kwargs)
 
     @classmethod
-    async def from_data(cls, data: bytes, volume: float=0.5, worker: QueueWorker=None):
+    async def from_data(cls, data: bytes, volume: float=0.5, loop: asyncio.AbstractEventLoop=None):
         """
         |coro|
 
@@ -273,20 +260,17 @@ class VorbistoPCMAudio(RawPCMAudio):
         ------------
         data: :class:`bytes`
             Vorbis bytes data
-        volume: :class:`float` (default: `0.5`)
-            Set initial volume for AudioSource
-        worker: :class:`QueueWorker` (default: `None`)
-            Set a :class:`QueueWorker` to convert the audio data
+        volume: :class:`float`
+            Set initial volume for AudioSource, default to `0.5`
+        loop: :class:`asyncio.AbstractEventLoop`
+            The asyncio event loop, default to `None`
         """
-        loop = asyncio.get_event_loop()
-        if worker is not None:
-            c_data = await worker.submit(lambda: cls._decode(data))
-        else:
-            c_data = await loop.run_in_executor(None, lambda: cls._decode(data))
+        loop = loop or asyncio.get_event_loop()
+        c_data = await loop.run_in_executor(None, lambda: cls._decode(data))
         return cls(c_data, volume, converted=True)
 
     @classmethod
-    async def from_file(cls, filename: str, volume: float=0.5, worker: QueueWorker=None):
+    async def from_file(cls, filename: str, volume: float=0.5, loop: asyncio.AbstractEventLoop=None):
         """
         |coro|
 
@@ -296,20 +280,17 @@ class VorbistoPCMAudio(RawPCMAudio):
         ------------
         filename: :class:`str`
             Vorbis File
-        volume: :class:`float` (default: `0.5`)
-            Set initial volume for AudioSource
-        worker: :class:`QueueWorker` (default: `None`)
-            Set a :class:`QueueWorker` to convert the audio data
+        volume: :class:`float`
+            Set initial volume for AudioSource, default to `0.5`
+        loop: :class:`asyncio.AbstractEventLoop`
+            The asyncio event loop, default to `None`
         """
         def read_data(cls, filename):
             with open(filename, 'rb') as o:
                 data = o.read()
             return cls._decode(data)
-        loop = asyncio.get_event_loop()
-        if worker is not None:
-            c_data = await worker.submit(lambda: read_data(cls, filename))
-        else:
-            c_data = await loop.run_in_executor(None, lambda: read_data(cls, filename))
+        loop = loop or asyncio.get_event_loop()
+        c_data = await loop.run_in_executor(None, lambda: read_data(cls, filename))
         return cls(c_data, volume, converted=True)
 
     def _decode(self, data):
