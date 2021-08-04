@@ -7,7 +7,7 @@ from ..utils.errors import *
 try:
     import miniaudio
 except ImportError:
-    raise MiniaudioError('miniaudio isn\'t installed') from None
+    raise MiniaudioError('miniaudio not installed') from None
 
 class MP3toPCMAudio(RawPCMAudio):
     """
@@ -17,8 +17,6 @@ class MP3toPCMAudio(RawPCMAudio):
 
     Note
     ------
-    You must have `miniaudio` installed in order this to work.
-
     When you initiate this class, the audio data will automatically coverted to pcm.
     This may cause all asynchronous process is blocked by this process.
     If you want to avoid this, use :class:`MP3toPCMAudio.from_data` or 
@@ -53,7 +51,7 @@ class MP3toPCMAudio(RawPCMAudio):
         super().__init__(io.BytesIO(decoded_data), volume, **kwargs)
 
     @classmethod
-    async def from_data(cls, data: bytes, volume: float=0.5, loop: asyncio.AbstractEventLoop=None):
+    async def from_data(cls, data: bytes, volume: float=0.5):
         """
         |coro|
 
@@ -65,15 +63,13 @@ class MP3toPCMAudio(RawPCMAudio):
             MP3 bytes data
         volume: :class:`float`
             Set initial volume for AudioSource, default to `0.5`
-        loop: :class:`asyncio.AbstractEventLoop`
-            The asyncio event loop, default to `None`
         """
-        loop = loop or asyncio.get_event_loop()
+        loop = asyncio.get_event_loop()
         c_data = await loop.run_in_executor(None, lambda: cls._decode(data))
         return cls(c_data, volume, converted=True)
 
     @classmethod
-    async def from_file(cls, filename: str, volume: float=0.5, loop: asyncio.AbstractEventLoop=None):
+    async def from_file(cls, filename: str, volume: float=0.5):
         """
         |coro|
 
@@ -85,14 +81,12 @@ class MP3toPCMAudio(RawPCMAudio):
             MP3 File
         volume: :class:`float`
             Set initial volume for AudioSource, default to `0.5`
-        loop: :class:`asyncio.AbstractEventLoop`
-            The asyncio event loop, default to `None`
         """
         def read_data(cls, filename):
             with open(filename, 'rb') as o:
                 data = o.read()
             return cls._decode(data)
-        loop = loop or asyncio.get_event_loop()
+        loop = asyncio.get_event_loop()
         c_data = await loop.run_in_executor(None, lambda: read_data(cls, filename))
         return cls(c_data, volume, converted=True)
 
@@ -116,8 +110,6 @@ class FLACtoPCMAudio(RawPCMAudio):
 
     Note
     ------
-    You must have `miniaudio` installed in order this to work.
-
     When you initiate this class, the audio data will automatically coverted to pcm.
     This may cause all asynchronous process is blocked by this process.
     If you want to avoid this, use :class:`FLACtoPCMAudio.from_data` or 
@@ -152,7 +144,7 @@ class FLACtoPCMAudio(RawPCMAudio):
         super().__init__(io.BytesIO(decoded_data), volume, **kwargs)
 
     @classmethod
-    async def from_data(cls, data: bytes, volume: float=0.5, loop: asyncio.AbstractEventLoop=None):
+    async def from_data(cls, data: bytes, volume: float=0.5):
         """
         |coro|
 
@@ -164,15 +156,13 @@ class FLACtoPCMAudio(RawPCMAudio):
             FLAC bytes data
         volume: :class:`float`
             Set initial volume for AudioSource, default to `0.5`
-        loop: :class:`asyncio.AbstractEventLoop`
-            The asyncio event loop, default to `None`
         """
-        loop = loop or asyncio.get_event_loop()
+        loop = asyncio.get_event_loop()
         c_data = await loop.run_in_executor(None, lambda: cls._decode(data))
         return cls(c_data, volume, converted=True)
 
     @classmethod
-    async def from_file(cls, filename: str, volume: float=0.5, loop: asyncio.AbstractEventLoop=None):
+    async def from_file(cls, filename: str, volume: float=0.5):
         """
         |coro|
 
@@ -184,14 +174,12 @@ class FLACtoPCMAudio(RawPCMAudio):
             FLAC File
         volume: :class:`float`
             Set initial volume for AudioSource, default to `0.5`
-        loop: :class:`asyncio.AbstractEventLoop`
-            The asyncio event loop, default to `None`
         """
         def read_data(cls, filename):
             with open(filename, 'rb') as o:
                 data = o.read()
             return cls._decode(data)
-        loop = loop or asyncio.get_event_loop()
+        loop = asyncio.get_event_loop()
         c_data = await loop.run_in_executor(None, lambda: read_data(cls, filename))
         return cls(c_data, volume, converted=True)
 
@@ -214,8 +202,6 @@ class VorbistoPCMAudio(RawPCMAudio):
 
     Note
     ------
-    You must have `miniaudio` installed in order this to work.
-
     When you initiate this class, the audio data will automatically coverted to pcm.
     This may cause all asynchronous process is blocked by this process.
     If you want to avoid this, use :class:`VorbistoPCMAudio.from_data` or 
@@ -250,7 +236,7 @@ class VorbistoPCMAudio(RawPCMAudio):
         super().__init__(io.BytesIO(decoded_data), volume, **kwargs)
 
     @classmethod
-    async def from_data(cls, data: bytes, volume: float=0.5, loop: asyncio.AbstractEventLoop=None):
+    async def from_data(cls, data: bytes, volume: float=0.5):
         """
         |coro|
 
@@ -262,15 +248,13 @@ class VorbistoPCMAudio(RawPCMAudio):
             Vorbis bytes data
         volume: :class:`float`
             Set initial volume for AudioSource, default to `0.5`
-        loop: :class:`asyncio.AbstractEventLoop`
-            The asyncio event loop, default to `None`
         """
-        loop = loop or asyncio.get_event_loop()
+        loop = asyncio.get_event_loop()
         c_data = await loop.run_in_executor(None, lambda: cls._decode(data))
         return cls(c_data, volume, converted=True)
 
     @classmethod
-    async def from_file(cls, filename: str, volume: float=0.5, loop: asyncio.AbstractEventLoop=None):
+    async def from_file(cls, filename: str, volume: float=0.5):
         """
         |coro|
 
@@ -282,14 +266,12 @@ class VorbistoPCMAudio(RawPCMAudio):
             Vorbis File
         volume: :class:`float`
             Set initial volume for AudioSource, default to `0.5`
-        loop: :class:`asyncio.AbstractEventLoop`
-            The asyncio event loop, default to `None`
         """
         def read_data(cls, filename):
             with open(filename, 'rb') as o:
                 data = o.read()
             return cls._decode(data)
-        loop = loop or asyncio.get_event_loop()
+        loop = asyncio.get_event_loop()
         c_data = await loop.run_in_executor(None, lambda: read_data(cls, filename))
         return cls(c_data, volume, converted=True)
 

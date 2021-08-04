@@ -51,7 +51,7 @@ class PCMEqualizer(Equalizer):
         You cannot add same frequencys,
         if you try to add it, it will raise :class:`EqualizerError`.
     """
-    def __init__(self, freqs: List[Dict]=None):
+    def __init__(self, freqs: List[dict]=None):
         if freqs is not None:
             # Check the frequencys
             self._check_freqs(freqs)
@@ -201,19 +201,17 @@ class SubwooferPCMEqualizer(PCMEqualizer):
         For example, 0.5 for 50% and 1.75 for 175%.
     """
     def __init__(self, volume: float):
-        self._freqs = []
         self.volume = volume
-        freqs = []
         base_freq = 60
-        freqs.append({
+        freqs = [{
             "freq": base_freq,
             "gain": self.volume
-        })
-        self._freqs.append(base_freq)
-        self.eq = PCMEqualizer(freqs)
+        }]
+        self._freqs = freqs
+        super().__init__(freqs)
 
     @property
-    def volume(self):
+    def volume(self) -> float:
         return self._volume
 
     @volume.setter
@@ -234,11 +232,5 @@ class SubwooferPCMEqualizer(PCMEqualizer):
         Set frequency gain in dB.
         """
         for freq in self._freqs:
-            self.eq.set_gain(freq, dB)
+            super().set_gain(**freq)
         self._volume = dB
-
-    def convert(self, data):
-        """
-        Convert audio data to equalized audio data
-        """
-        return self.eq.convert(data)

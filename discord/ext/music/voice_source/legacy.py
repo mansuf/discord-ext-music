@@ -28,11 +28,6 @@ __all__ = (
     'WavAudio'
 )
 
-if sys.platform != 'win32':
-    CREATE_NO_WINDOW = 0
-else:
-    CREATE_NO_WINDOW = 0x08000000
-
 log = logging.getLogger(__name__)
 
 class MusicSource(discord.AudioSource):
@@ -253,7 +248,7 @@ class RawPCMAudio(MusicSource):
             # Change current stream durations
             self._durations = s_pos / 1000 * 20 / OpusEncoder.FRAME_SIZE
 
-    def rewind(self, seconds: int):
+    def rewind(self, seconds: float):
         if not self.seekable():
             raise IllegalSeek('current stream doesn\'t support seek() operations')
 
