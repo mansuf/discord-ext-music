@@ -4,6 +4,14 @@ An easy-to-use music extenstion for [discord.py](https://github.com/Rapptz/disco
 
 This project is still in development and not available in PyPI yet.
 
+## Features
+
+- Built-in equalizer and volume adjuster for PCM codec audio
+- Built-in Playlist
+- Can play most supported sources from ffmpeg libraries and it embedded into python! ([PyAV](https://github.com/PyAV-Org/PyAV) required)
+
+
+
 ## Installation
 
 Not available yet.
@@ -23,6 +31,8 @@ Not available yet.
 - **All sources that [PyAV](https://github.com/PyAV-Org/PyAV) can handle** ([PyAV](https://github.com/PyAV-Org/PyAV) required)
 
 ## Usage
+
+**Dont expect everything is working, this project is still development**
 
 Official API is not available yet, but you can use this `AudioSource`:
 - `RawPCMAudio`
