@@ -32,7 +32,7 @@ Not available yet.
 
 ## Usage
 
-**Dont expect everything is working, this project is still development**
+**Dont expect everything is working, this project is still in development**
 
 Official API is not available yet, but you can use this `AudioSource`:
 - `RawPCMAudio`
