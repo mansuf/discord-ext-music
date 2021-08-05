@@ -1,10 +1,12 @@
+"""
+IMPORTANT NOTE: DO NOT USE THIS!!!!
+This codes below will be used for next development
+such as volume control in LibAVStream, etc
+"""
+
 import av
 import io
 from .io import LibAVIO
-
-# IMPORTANT NOTE: DO NOT USE THIS!!!!
-# This codes below will be used for next development
-# such as volume control in LibAVStream, etc
 
 PCM_SIZE = 3840
 

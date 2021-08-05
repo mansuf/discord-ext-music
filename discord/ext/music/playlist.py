@@ -4,7 +4,10 @@ from .track import Track
 from .utils.errors import TrackNotExist
 
 class Playlist:
-    """a class representing playlist for tracks"""
+    """a class representing playlist for tracks
+
+    This class is thread-safe.
+    """
     def __init__(self) -> None:
         self._tracks = []
         self._lock = threading.Lock()
@@ -38,37 +41,53 @@ class Playlist:
         self._tracks.remove(target)
         self._reorder_id_tracks(self._tracks)
 
-    def insert_track(self, track: Track):
+    def insert_track(self, track: Track) -> None:
+        """Insert a track"""
         with self._lock:
             self._put(track)
 
-    def remove_track(self, track: Track):
+    def remove_track(self, track: Track) -> None:
+        """Remove a track"""
         with self._lock:
             self._remove(track)
+
+    def remove_track_from_pos(self, pos: int) -> None:
+        """Remove a track from given position"""
+        with self._lock:
+            track = self.get_track_from_pos(pos)
+            self._remove(track)
     
-    def remove_all_tracks(self):
+    def remove_all_tracks(self) -> None:
+        """Remove all tracks from playlist"""
         with self._lock:
             self._tracks = []
             self._pos = 0
 
-    def reset_pos_tracks(self):
+    def reset_pos_tracks(self) -> None:
+        """Reset current position playlist"""
         with self._lock:
             self._pos = 0
 
     def is_track_exist(self, track: Track) -> bool:
+        """Check if given track is exist in this playlist"""
         t = self._get_raw_track(track)
         return t != None
     
     def get_all_tracks(self) -> List[Track]:
+        """Get all tracks in this playlist"""
         return [t['track'] for t in self._tracks]
 
-    def get_track(self, track: Track):
-        target = self._get_raw_track(track)
-        if target is None:
-            raise TrackNotExist('track is not exist')
-        return target['track']
+    def get_track_from_pos(self, pos: int) -> Track:
+        """Get a track from given position"""
+        try:
+            t = self._tracks[pos]
+        except IndexError:
+            raise TrackNotExist('track position %s is not exist' % pos) from None
+        else:
+            return t['track']
 
     def get_next_track(self) -> Union[Track, None]:
+        """Get next track"""
         with self._lock:
             try:
                 t = self._tracks[self._pos + 1]
@@ -76,9 +95,10 @@ class Playlist:
                 return None
             else:
                 self._pos += 1
-                return t
+                return t['track']
 
     def get_previous_track(self) -> Union[Track, None]:
+        """Get previous track"""
         with self._lock:
             try:
                 t = self._tracks[self._pos - 1]
@@ -86,4 +106,4 @@ class Playlist:
                 return None
             else:
                 self._pos -= 1
-                return t
+                return t['track']
