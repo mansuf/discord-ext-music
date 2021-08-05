@@ -1,9 +1,10 @@
 import threading
 import av
+import io
 from .io import LibAVIO
 from ...utils.errors import IllegalSeek
 
-class LibAVStream:
+class LibAVStream(io.RawIOBase):
     """A class represent LibAV Stream"""
     def __init__(self, url, format, codec, rate, seek=None) -> None:
         self.url = url
@@ -85,6 +86,7 @@ class LibAVStream:
                 packet = next(self.demuxer, b'')
             except av.error.FFmpegError:
                 # Fail to get packet such as invalidated session, etc
+                self._close()
                 self.reconnect(self.pos)
                 continue
 
@@ -128,7 +130,10 @@ class LibAVStream:
             self.pos = seconds
             self.iter_data = self._iter_av_packets(seconds)
 
-    def read(self, n):
+    def tell(self):
+        return self.pos
+
+    def read(self, n=-1):
         data = next(self.iter_data, b'')
         self.buffer.write(data)
         return self.buffer.read(n)

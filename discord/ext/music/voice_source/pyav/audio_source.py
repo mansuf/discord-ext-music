@@ -29,7 +29,7 @@ class _OpusStream(LibAVStream):
 class LibAVOpusAudio(MusicSource):
     """Represents embedded FFmpeg libraries Opus audio source.
 
-    There is not volume adjuster and equalizer for now, 
+    There is no volume adjuster and equalizer for now, 
     because some problems.
 
     Parameters
