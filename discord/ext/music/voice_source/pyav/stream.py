@@ -1,6 +1,7 @@
 import threading
 import av
 from .io import LibAVIO
+from ...utils.errors import IllegalSeek
 
 class LibAVStream:
     """A class represent LibAV Stream"""
@@ -22,6 +23,7 @@ class LibAVStream:
         self.muxer = None
         self.demuxer = None
         self._lock = threading.Lock()
+        self._stopped = threading.Event()
 
         # Will be used in Decoder Stream
         self._stream_buffer = LibAVIO()
@@ -66,6 +68,10 @@ class LibAVStream:
         self.output_stream = None
         self.demuxer = None
         self._stream_buffer = LibAVIO()
+        self._stopped.set()
+
+    def is_closed(self):
+        return self._stopped.is_set()
 
     def close(self):
         self._close()
@@ -75,7 +81,12 @@ class LibAVStream:
     def _iter_av_packets(self, seek=None):
         self.reconnect(seek)
         while True:
-            packet = next(self.demuxer, b'')
+            try:
+                packet = next(self.demuxer, b'')
+            except av.error.FFmpegError:
+                # Fail to get packet such as invalidated session, etc
+                self.reconnect(self.pos)
+                continue
 
             # If stream is exhausted, close connection
             if not packet:
@@ -107,15 +118,15 @@ class LibAVStream:
                 yield self._stream_buffer.read()
 
     def seek(self, seconds: float):
-        _seconds = 0
+        if self.durations is None:
+            raise IllegalSeek('current stream doesn\'t support seek')
         with self._lock:
-            if seconds < self.durations:
-                pass
+            if seconds <= 0:
+                self.close()
             elif seconds > self.durations:
-                pass
-            else:
-                _seconds += seconds
-            self.iter_data = self._iter_av_packets(_seconds)
+                self.close()
+            self.pos = seconds
+            self.iter_data = self._iter_av_packets(seconds)
 
     def read(self, n):
         data = next(self.iter_data, b'')
