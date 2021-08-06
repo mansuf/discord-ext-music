@@ -6,11 +6,9 @@ This project is still in development and not available in PyPI yet.
 
 ## Features
 
-- Built-in equalizer and volume adjuster for PCM codec audio
+- Built-in equalizer and volume adjuster for PCM codec audio ([pydub](https://github.com/jiaaro/pydub) and [scipy](https://github.com/scipy/scipy) required)
 - Built-in Playlist
 - Can play most supported sources from ffmpeg libraries and it embedded into python! ([PyAV](https://github.com/PyAV-Org/PyAV) required)
-
-
 
 ## Installation
 
