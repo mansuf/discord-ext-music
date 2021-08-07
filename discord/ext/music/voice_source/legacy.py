@@ -82,7 +82,11 @@ class MusicSource(discord.AudioSource):
 
 class Silence(MusicSource):
     def read(self):
-        return bytearray([0xF8, 0xFF, 0xFE])
+        return bytes(bytearray([0xF8, 0xFF, 0xFE]))
+
+    def is_opus(self):
+        # Return true so we don't need to encode it
+        return True
 
 class RawPCMAudio(MusicSource):
     """Represents raw 16-bit 48KHz stereo PCM audio source.
