@@ -1,1 +1,1 @@
-from .audio_source import LibAVOpusAudio, __all__
+from .audio_source import LibAVOpusAudio, LibAVAudio, __all__

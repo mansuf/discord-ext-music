@@ -3,8 +3,16 @@ from ..legacy import MusicSource
 from discord.oggparse import OggStream
 
 __all__ = (
-    'LibAVOpusAudio'
+    'LibAVAudio', 'LibAVOpusAudio'
 )
+
+class LibAVAudio(MusicSource):
+    """Represents embedded FFmpeg libraries audio source."""
+    def is_opus(self):
+        # This must return True
+        # Otherwise it will encode to opus codec and caused crash
+        # (Segmentation Fault)
+        return True
 
 # For some reason, LibAVStream.read() with libopus codec
 # did not returning data sometimes.
@@ -26,7 +34,7 @@ class _OpusStream(LibAVStream):
                 continue
             return data
 
-class LibAVOpusAudio(MusicSource):
+class LibAVOpusAudio(LibAVAudio):
     """Represents embedded FFmpeg libraries Opus audio source.
 
     There is no volume adjuster and equalizer for now, 
@@ -65,6 +73,3 @@ class LibAVOpusAudio(MusicSource):
 
     def cleanup(self):
         return self.stream.close()
-
-    def is_opus(self):
-        return True
