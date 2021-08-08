@@ -12,6 +12,7 @@ class _Player(AudioPlayer):
         super().__init__(source, client, after=after)
         self._play_silence = False
         self._silence = Silence()
+        self._leaving = client._leaving
 
         # For _set_source()
         self._lock = asyncio.Lock()
@@ -42,8 +43,17 @@ class _Player(AudioPlayer):
 
             # are we disconnected from voice?
             if not self._connected.is_set():
-                # wait until we are connected
-                self._connected.wait()
+
+                # Checking if we are really leaving voice
+                while not self._connected.is_set():
+                    if self._leaving.is_set() and not self._connected.is_set():
+                        # We're leaving voice, stopping player
+                        self.stop()
+                        return
+                    else:
+                        # Add delay to prevent overload CPU usage
+                        time.sleep(0.02)
+                        continue
                 # reset our internal data
                 self.loops = 0
                 self._start = time.perf_counter()
@@ -54,7 +64,7 @@ class _Player(AudioPlayer):
             if not data:
                 self.stop()
                 break
-                
+            
             play_audio(data, encode=not self.source.is_opus())
             next_time = self._start + self.DELAY * self.loops
             delay = max(0, self.DELAY + (next_time - time.perf_counter()))
