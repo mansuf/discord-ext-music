@@ -68,7 +68,10 @@ class _Player(AudioPlayer):
         self._play_silence = False
         super().resume(update_speaking=update_speaking)
 
-    async def _set_source(self, source):
+    def _set_source(self, source):
+        pass
+
+    async def set_source(self, source):
         async with self._lock:
             self.pause(update_speaking=False)
             self.source = source
