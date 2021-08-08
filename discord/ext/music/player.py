@@ -1,20 +1,23 @@
+import sys
 import logging
 import time
 import asyncio
+import traceback
 
 from discord.player import AudioPlayer
 from .voice_source import Silence
 
 log = logging.getLogger(__name__)
 
-class _Player(AudioPlayer):
-    def __init__(self, source, client, *, after=None):
-        super().__init__(source, client, after=after)
+class MusicPlayer(AudioPlayer):
+    def __init__(self, track, client, *, after=None):
+        super().__init__(track.source, client, after=after)
         self._play_silence = False
+        self._track = track
         self._silence = Silence()
         self._leaving = client._leaving
 
-        # For _set_source()
+        # For set_source()
         self._lock = asyncio.Lock()
 
     def _do_run(self):
@@ -70,6 +73,24 @@ class _Player(AudioPlayer):
             delay = max(0, self.DELAY + (next_time - time.perf_counter()))
             time.sleep(delay)
 
+    def _call_after(self):
+        error = self._current_error
+        track = self._track
+
+        if self.after is not None:
+            try:
+                self.after(error, track)
+            except Exception as exc:
+                log.exception('Calling the after function failed.')
+                exc.__context__ = error
+                traceback.print_exception(type(exc), exc, exc.__traceback__)
+        elif error:
+            msg = 'Exception in voice thread {}'.format(self.name)
+            log.exception(msg, exc_info=error)
+            print(msg, file=sys.stderr)
+            traceback.print_exception(type(error), error, error.__traceback__)
+
+
     def pause(self, *, update_speaking=True, play_silence=True):
         self._play_silence = play_silence
         super().pause(update_speaking=update_speaking)
@@ -87,6 +108,12 @@ class _Player(AudioPlayer):
             self.source = source
             self.resume(update_speaking=False)
 
-class MusicPlayer:
-    def __init__(self, source, client, *, after=None) -> None:
-        pass
+    def seek(self, seconds):
+        self.source.seek(seconds)
+
+    def rewind(self, seconds):
+        self.source.rewind(seconds)
+
+    def get_stream_durations(self):
+        return self.source.get_stream_durations()
+    
