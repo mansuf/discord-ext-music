@@ -31,9 +31,9 @@ class _Player(AudioPlayer):
                 if self._play_silence:
                     # Play opus encoded silence audio
                     play_audio(self._silence.read(), encode=False)
-                    next_time = self._start + self.DELAY * self.loops
-                    delay = max(0, self.DELAY + (next_time - time.perf_counter()))
-                    time.sleep(delay)
+
+                    # Add delay to prevent overload CPU usage
+                    time.sleep(0.02)
                     continue
 
                 # wait until we aren't
