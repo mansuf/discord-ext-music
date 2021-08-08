@@ -41,8 +41,8 @@ class Playlist:
         self._tracks.remove(target)
         self._reorder_id_tracks(self._tracks)
 
-    def insert_track(self, track: Track) -> None:
-        """Insert a track"""
+    def add_track(self, track: Track) -> None:
+        """Add a track"""
         with self._lock:
             self._put(track)
 
