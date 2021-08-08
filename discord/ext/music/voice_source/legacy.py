@@ -52,7 +52,7 @@ class MusicSource(discord.AudioSource):
     
     def rewind(self, seconds: float):
         """
-        Jump rewind to specified durations
+        Jump back to specified durations
         """
         raise NotImplementedError()
 
