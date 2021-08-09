@@ -29,8 +29,16 @@ class LibAVStream(io.RawIOBase):
         # Will be used in Decoder Stream
         self._stream_buffer = LibAVIO()
 
+        # Check connection
+        self._check_connection(url)
+
         # Iteration data LibAV
         self.iter_data = self._iter_av_packets()
+
+    def _check_connection(self, url):
+        stream = av.open(url, 'r')
+        self.duration = stream.duration
+        stream.close()
 
     def reconnect(self, seek=None):
         # Speed up grab kwargs
@@ -40,7 +48,6 @@ class LibAVStream(io.RawIOBase):
         rate = self.kwargs.get('rate')
 
         self.stream = av.open(self.url, 'r')
-        self.durations = self.stream.duration
         _seek_durations = 0
         # If seek argument is defined in __init__()
         if _seek_kwarg:
