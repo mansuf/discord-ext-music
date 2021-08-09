@@ -2,7 +2,7 @@ import threading
 import av
 import io
 from .io import LibAVIO
-from ...utils.errors import IllegalSeek
+from ...utils.errors import IllegalSeek, LibAVError
 
 class LibAVStream(io.RawIOBase):
     """A class represent LibAV Stream"""
@@ -36,9 +36,12 @@ class LibAVStream(io.RawIOBase):
         self.iter_data = self._iter_av_packets()
 
     def _check_connection(self, url):
-        stream = av.open(url, 'r')
-        self.duration = stream.duration
-        stream.close()
+        try:
+            stream = av.open(url, 'r')
+            self.duration = stream.duration
+            stream.close()
+        except av.error.FFmpegError as e:
+            raise LibAVError(str(e)) from None
 
     def reconnect(self, seek=None):
         # Speed up grab kwargs
