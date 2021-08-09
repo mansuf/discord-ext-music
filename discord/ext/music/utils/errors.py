@@ -1,59 +1,61 @@
-class EqualizerError(Exception):
+from discord.errors import DiscordException
+
+class EqualizerError(DiscordException):
     """
     Raised when something happened in Equalizer class
     """
     pass
 
-class ConverterError(Exception):
+class ConverterError(DiscordException):
     """
     Raised when something happened in Converter class
     """
     pass
 
-class WorkerError(Exception):
+class WorkerError(DiscordException):
     """
     Raised when something happened in Worker class
     """
     pass
 
-class IllegalSeek(Exception):
+class IllegalSeek(DiscordException):
     """
     Raised when MusicSource trying to seek
     when stream doesn't support seek() operations
     """
     pass
 
-class InvalidMP3(Exception):
+class InvalidMP3(DiscordException):
     """
     Raised when audio data is not mp3 format
     """
     pass
 
-class InvalidFLAC(Exception):
+class InvalidFLAC(DiscordException):
     """
     Raised when audio data is not flac format
     """
     pass
 
-class InvalidVorbis(Exception):
+class InvalidVorbis(DiscordException):
     """
     Raised when audio data is not vorbis codec
     """
     pass
 
-class MiniaudioError(Exception):
+class MiniaudioError(DiscordException):
     """
     Raised when something happened in miniaudio module
     """
     pass
 
-class LibAVError(Exception):
+class LibAVError(DiscordException):
     """
     Raised when something happened in LibAV stream
     """
     pass
 
-class TrackNotExist(Exception):
+class TrackNotExist(DiscordException):
     """
     Raised when track is trying to be removed while it not exist
     """
