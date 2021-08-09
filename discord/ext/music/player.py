@@ -78,6 +78,14 @@ class MusicPlayer(AudioPlayer):
         track = self._track
 
         if self.after is not None:
+            if asyncio.iscoroutinefunction(self.after):
+                fut = asyncio.run_coroutine_threadsafe(self.after(error, track), self.client.loop)
+                exc = fut.exception()
+                if exc:
+                    log.exception('Calling the after function failed.')
+                    exc.__context__ = error
+                    traceback.print_exception(type(exc), exc, exc.__traceback__)
+                return
             try:
                 self.after(error, track)
             except Exception as exc:
