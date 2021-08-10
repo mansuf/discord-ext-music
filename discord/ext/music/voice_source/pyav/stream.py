@@ -38,7 +38,7 @@ class LibAVStream(io.RawIOBase):
     def _check_connection(self, url):
         try:
             stream = av.open(url, 'r')
-            self.duration = stream.duration
+            self.durations = stream.duration
             stream.close()
         except av.error.FFmpegError as e:
             raise LibAVError(str(e)) from None
