@@ -109,6 +109,7 @@ class LibAVStream(io.RawIOBase):
             if packet.is_corrupt:
                 self._close()
                 self.reconnect(self.pos)
+                continue
 
             # According PyAV if demuxer sending packet with attribute dts with value None
             # that means demuxer is sending dummy packet.
