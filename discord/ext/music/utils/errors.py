@@ -60,3 +60,19 @@ class TrackNotExist(DiscordException):
     Raised when track is trying to be removed while it not exist
     """
     pass
+
+class MusicClientException(DiscordException):
+    """Base exception for MusicClient class"""
+    pass
+
+class MusicNotPlaying(MusicClientException):
+    """Music is not playing"""
+    pass
+
+class MusicAlreadyPlaying(MusicClientException):
+    """Music is already playing"""
+    pass
+
+class NoMoreSongs(MusicClientException):
+    """No more songs in playlist"""
+    pass
