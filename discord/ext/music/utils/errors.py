@@ -76,3 +76,7 @@ class MusicAlreadyPlaying(MusicClientException):
 class NoMoreSongs(MusicClientException):
     """No more songs in playlist"""
     pass
+
+class NotConnected(MusicClientException):
+    """Not connected to voice"""
+    pass
