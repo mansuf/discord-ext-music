@@ -46,6 +46,14 @@ class Playlist:
         with self._lock:
             self._put(track)
 
+    def jump_to_pos(self, pos: int) -> Track:
+        """Change playlist pos and return :class:`Track` from given position """
+        with self._lock:
+            track = self.get_track_from_pos(pos)
+            raw_track = self._get_raw_track(track)
+            self._pos = raw_track['_id']
+        return track
+
     def remove_track(self, track: Track) -> None:
         """Remove a track"""
         with self._lock:
