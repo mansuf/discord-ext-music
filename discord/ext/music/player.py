@@ -80,10 +80,11 @@ class MusicPlayer(AudioPlayer):
 
         # Check if MusicClient.stop() is called
         if self._stop.is_set():
-            msg = 'Exception in voice thread {}'.format(self.name)
-            log.exception(msg, exc_info=error)
-            print(msg, file=sys.stderr)
-            traceback.print_exception(type(error), error, error.__traceback__)
+            if error:
+                msg = 'Exception in voice thread {}'.format(self.name)
+                log.exception(msg, exc_info=error)
+                print(msg, file=sys.stderr)
+                traceback.print_exception(type(error), error, error.__traceback__)
             return
         elif self.after is not None:
             if asyncio.iscoroutinefunction(self.after):
