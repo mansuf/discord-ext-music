@@ -1,15 +1,17 @@
 from .voice_source import MusicSource
 
 class Track:
-    """a class containing MusicSource, name, url, thumbnail"""
+    """a class containing MusicSource, name, url, stream url, thumbnail"""
     def __init__(
         self,
         source: MusicSource,
         name: str,
         url: str=None,
+        stream_url: str=None,
         thumbnail: bytes=None
     ) -> None:
         self.name = name
         self.url = url
+        self.stream_url = stream_url
         self.source = source
         self.thumbnail = thumbnail
