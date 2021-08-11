@@ -188,7 +188,7 @@ class MusicClient(VoiceClient):
             self._play(track, self._after)
 
     async def jump_to_pos(self, pos: int):
-        """Change playlist pos and return :class:`Track` from given position """
+        """Play track from given pos"""
         if not self.is_connected():
             raise NotConnected('Not connected to voice.')
         async with self._lock:
