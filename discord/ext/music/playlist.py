@@ -85,6 +85,10 @@ class Playlist:
         """Get all tracks in this playlist"""
         return [t['track'] for t in self._tracks]
 
+    def get_current_track(self) -> Track:
+        """Get current track in current position"""
+        return self.get_track_from_pos(self._pos)
+
     def get_track_from_pos(self, pos: int) -> Track:
         """Get a track from given position"""
         try:
