@@ -1,24 +1,36 @@
 import asyncio
-import socket
+import traceback
 import threading
+
+from typing import Callable, Any, Union
 from discord.voice_client import VoiceClient
+from discord.errors import ClientException
+from discord import opus
+from .playlist import Playlist
+from .track import Track
+from .player import MusicPlayer
+from .utils.errors import MusicAlreadyPlaying, MusicNotPlaying, NoMoreSongs, NotConnected
 
 # This class implement discord.voice_client.VoiceClient
 # https://github.com/Rapptz/discord.py/blob/master/discord/voice_client.py#L175
-# some functions in this class is not exists, such as:
-# _get_voice_packet()
-# _encrypt_xsalsa20_poly1305()
-# _encrypt_xsalsa20_poly1305_suffix()
-# _encrypt_xsalsa20_poly1305_lite()
-# send_audio_packet()
-# checked_add()
-# Because they will be moved to discord.ext.music.player.MusicPlayer
+# with music control (play, stop, pause, resume, seek, rewind)
+# and playlist control (next, previous, jump_to, remove, remove_all, reset_pos)
 class MusicClient(VoiceClient):
     def __init__(self, client, channel):
         super().__init__(client, channel)
+        self._after = self._call_after
+
+        # Will be used for _stop()
+        self.__stop = asyncio.Event()
         
         # This will be used if bot is leaving voice channel
         self._leaving = threading.Event()
+
+        # Playlist to store tracks
+        self._playlist = Playlist()
+
+        # Will be used for music controls
+        self._lock = asyncio.Lock()
 
     async def on_voice_state_update(self, data):
         self.session_id = data['session_id']
@@ -38,9 +50,183 @@ class MusicClient(VoiceClient):
         else:
             self._voice_state_complete.set()
 
-    async def on_voice_server_update(self, data):
-        print('vs', data)
-        return await super().on_voice_server_update(data)
+    async def connect(self, *, reconnect, timeout):
+        async with self._lock:
+            await super().connect(reconnect=reconnect, timeout=timeout)
 
-    async def connect(self, *, reconnect: bool, timeout: bool):
-        await super().connect(reconnect=reconnect, timeout=timeout)
+    async def _disconnect(self):
+        self._stop()
+        self._connected.clear()
+
+        try:
+            if self.ws:
+                await self.ws.close()
+
+            await self.voice_disconnect()
+        finally:
+            self.cleanup()
+            if self.socket:
+                self.socket.close()
+
+    async def disconnect(self, *, force=False):
+        if not force:
+            if not self.is_connected():
+                return
+            async with self._lock:
+                await self._disconnect()
+        else:
+            await self._disconnect()
+
+    async def move_to(self, channel):
+        async with self._lock:
+            await super().move_to(channel)
+    
+    # Playback controls
+
+    async def _call_after(self, err, track):
+        # If _stop() is called, do nothing.
+        if self.__stop.is_set():
+            return
+        if err:
+            print('Ignoring error %s: %s' % (err.__class__.__name__), str(err))
+            traceback.print_exception(type(err), err, err.__traceback__)
+        _track = self._playlist.get_next_track()
+        if _track:
+            await self.play(track)
+
+    def register_after_callback(self, func: Callable[[Union[Exception, None], Union[Track, None]], Any]):
+        """Register a callable function (can be coroutine function)
+        for callback after player has done playing or error occured.
+        """
+        if not callable(func):
+            raise TypeError('Expected a callable, got %s' % type(func))
+        self._after = func
+
+    def _play(self, track, after):
+        if not self.encoder and not track.source.is_opus():
+            self.encoder = opus.Encoder()
+
+        self._playlist.add_track(track)
+        self._player = MusicPlayer(track, self, after=after)
+        self._player.start()
+
+        # we are playing
+        self.__stop.clear()
+
+    async def play(self, track: Track):
+        if not self.is_connected():
+            raise NotConnected('Not connected to voice.')
+
+        if not isinstance(track, Track):
+            raise TypeError('track must an Track not {0.__class__.__name__}'.format(track))
+
+        async with self._lock:
+            if self.is_playing():
+                self._playlist.add_track(track)
+                return
+            self._play(track, self._after)
+
+    def _stop(self):
+        if self._player:
+            self.__stop.set()
+            self._player.stop()
+            self._player = None
+
+    async def stop(self):
+        if not self._player:
+            raise MusicNotPlaying('MusicClient Not playing any audio')
+        async with self._lock:
+            self._stop()
+
+    async def pause(self, play_silence=True):
+        if not self.is_playing() or not self._player:
+            raise MusicNotPlaying('MusicClient Not playing any audio')
+        async with self._lock:
+            self._player.pause(play_silence=play_silence)
+
+    async def resume(self):
+        if self.is_playing():
+            raise MusicAlreadyPlaying('Already playing audio')
+        elif not self._player:
+            raise MusicNotPlaying('MusicClient Not playing any audio')
+        async with self._lock:
+            self._player.resume()
+    
+    async def seek(self, seconds: Union[int, float]):
+        """Jump forward to specified durations"""
+        if not self.is_playing() or not self._player:
+            raise MusicNotPlaying('MusicClient Not playing any audio')
+        async with self._lock:
+            self._player.seek(seconds)
+
+    async def rewind(self, seconds: Union[int, float]):
+        """Jump back to specified durations"""
+        if not self.is_playing() or not self._player:
+            raise MusicNotPlaying('MusicClient Not playing any audio')
+        async with self._lock:
+            self._player.rewind(seconds)
+
+    async def next_track(self):
+        """Play next track"""
+        if not self.is_connected():
+            raise NotConnected('Not connected to voice.')
+        async with self._lock:
+            if self.is_playing():
+                self._stop()
+            track = self._playlist.get_next_track()
+            if track is None:
+                raise NoMoreSongs('no more songs in playlist')
+            self._play(track, self._after)
+
+    async def previous_track(self):
+        """Play previous track"""
+        if not self.is_connected():
+            raise NotConnected('Not connected to voice.')
+        async with self._lock:
+            if self.is_playing():
+                self._stop()
+            track = self._playlist.get_previous_track()
+            if track is None:
+                raise NoMoreSongs('no more songs in playlist')
+            self._play(track, self._after)
+    
+    async def remove_track(self, track: Track):
+        """Remove a track"""
+        async with self._lock:
+            if self.is_playing():
+                _track = self._player.track
+                if _track == track:
+                    # Skip to next track if same track
+                    await self.next_track()
+            self.remove_track(track)
+
+    async def jump_to_pos(self, pos: int):
+        """Change playlist pos and return :class:`Track` from given position """
+        if not self.is_connected():
+            raise NotConnected('Not connected to voice.')
+        async with self._lock:
+            if self.is_playing():
+                self._stop()
+            track = self._playlist.jump_to_pos(pos)
+            self._play(track, self._after)
+
+    # Track related
+
+    @property
+    def source(self):
+        raise NotImplementedError
+    
+    @source.setter
+    def source(self, value):
+        raise NotImplementedError
+
+    @property
+    def track(self) -> Union[Track, None]:
+        """Optional[:class:`Track`]: The audio track being played, if playing.
+        """
+        return self._player.track if self._player else None
+
+    async def set_track(self, track: Track):
+        if self._player is None:
+            raise MusicNotPlaying('MusicClient Not playing any audio')
+        await self._player.set_track(track)
