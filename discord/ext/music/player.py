@@ -13,12 +13,12 @@ class MusicPlayer(AudioPlayer):
     def __init__(self, track, client, *, after=None):
         super().__init__(track.source, client, after=after)
         self._play_silence = False
-        self._track = track
+        self.track = track
         self._silence = Silence()
         self._leaving = client._leaving
 
         # For set_source()
-        self._lock = asyncio.Lock()
+        self._lock = client._lock
 
     def _do_run(self):
         self.loops = 0
@@ -75,7 +75,7 @@ class MusicPlayer(AudioPlayer):
 
     def _call_after(self):
         error = self._current_error
-        track = self._track
+        track = self.track
 
         if self.after is not None:
             if asyncio.iscoroutinefunction(self.after):
