@@ -16,6 +16,7 @@ class MusicPlayer(AudioPlayer):
         self.track = track
         self._silence = Silence()
         self._leaving = client._leaving
+        self._stop = client.__stop
 
         # For set_source()
         self._lock = client._lock
@@ -77,7 +78,14 @@ class MusicPlayer(AudioPlayer):
         error = self._current_error
         track = self.track
 
-        if self.after is not None:
+        # Check if MusicClient.stop() is called
+        if self._stop.is_set():
+            msg = 'Exception in voice thread {}'.format(self.name)
+            log.exception(msg, exc_info=error)
+            print(msg, file=sys.stderr)
+            traceback.print_exception(type(error), error, error.__traceback__)
+            return
+        elif self.after is not None:
             if asyncio.iscoroutinefunction(self.after):
                 fut = asyncio.run_coroutine_threadsafe(self.after(error, track), self.client.loop)
                 exc = fut.exception()
