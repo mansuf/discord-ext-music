@@ -202,13 +202,13 @@ class MusicClient(VoiceClient):
 
     async def remove_track(self, track: Track):
         """Remove a track"""
+        if self.is_playing():
+            _track = self._player.track
+            if _track == track:
+                # Skip to next track if same track
+                await self.next_track()
         async with self._lock:
-            if self.is_playing():
-                _track = self._player.track
-                if _track == track:
-                    # Skip to next track if same track
-                    await self.next_track()
-            self.remove_track(track)
+            self._playlist.remove_track(track)
 
     async def remove_track_from_pos(self, pos: int):
         """Remove a track from given position"""
