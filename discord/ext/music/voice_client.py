@@ -207,6 +207,13 @@ class MusicClient(VoiceClient):
                     await self.next_track()
             self.remove_track(track)
 
+    async def remove_all_tracks(self):
+        """Remove all tracks and stop the player (if playing)"""
+        async with self._lock:
+            if self.is_playing():
+                self._stop()
+            self._playlist.remove_all_tracks()
+
     # Track related
 
     @property
