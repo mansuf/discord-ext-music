@@ -110,10 +110,11 @@ class MusicPlayer(AudioPlayer):
     def _set_source(self, source):
         pass
 
-    async def set_source(self, source):
+    async def set_track(self, track):
         async with self._lock:
             self.pause(update_speaking=False)
-            self.source = source
+            self.source = track.source
+            self.track = track
             self.resume(update_speaking=False)
 
     def seek(self, seconds):
