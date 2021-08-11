@@ -186,16 +186,6 @@ class MusicClient(VoiceClient):
             if track is None:
                 raise NoMoreSongs('no more songs in playlist')
             self._play(track, self._after)
-    
-    async def remove_track(self, track: Track):
-        """Remove a track"""
-        async with self._lock:
-            if self.is_playing():
-                _track = self._player.track
-                if _track == track:
-                    # Skip to next track if same track
-                    await self.next_track()
-            self.remove_track(track)
 
     async def jump_to_pos(self, pos: int):
         """Change playlist pos and return :class:`Track` from given position """
@@ -206,6 +196,16 @@ class MusicClient(VoiceClient):
                 self._stop()
             track = self._playlist.jump_to_pos(pos)
             self._play(track, self._after)
+
+    async def remove_track(self, track: Track):
+        """Remove a track"""
+        async with self._lock:
+            if self.is_playing():
+                _track = self._player.track
+                if _track == track:
+                    # Skip to next track if same track
+                    await self.next_track()
+            self.remove_track(track)
 
     # Track related
 
