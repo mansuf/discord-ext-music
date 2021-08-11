@@ -84,9 +84,6 @@ class MusicClient(VoiceClient):
     # Playback controls
 
     async def _call_after(self, err, track):
-        # If _stop() is called, do nothing.
-        if self.__stop.is_set():
-            return
         if err:
             print('Ignoring error %s: %s' % (err.__class__.__name__), str(err))
             traceback.print_exception(type(err), err, err.__traceback__)
