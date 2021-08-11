@@ -4,7 +4,6 @@ import threading
 
 from typing import Callable, Any, Union
 from discord.voice_client import VoiceClient
-from discord.errors import ClientException
 from discord import opus
 from .playlist import Playlist
 from .track import Track
