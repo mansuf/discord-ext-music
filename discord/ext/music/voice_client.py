@@ -163,6 +163,9 @@ class MusicClient(VoiceClient):
         async with self._lock:
             self._player.rewind(seconds)
 
+    def get_stream_duration(self) -> float:
+        return self._player.get_stream_durations() if self._player else None
+
     async def next_track(self):
         """Play next track"""
         if not self.is_connected():
@@ -206,6 +209,16 @@ class MusicClient(VoiceClient):
                     # Skip to next track if same track
                     await self.next_track()
             self.remove_track(track)
+
+    async def remove_track_from_pos(self, pos: int):
+        """Remove a track from given position"""
+        track = self._playlist.get_track_from_pos(pos)
+        if self.is_playing():
+            _track = self._player.track
+            if _track == track:
+                await self.next_track()
+        async with self._lock:
+            self._playlist.remove_track_from_pos(pos)
 
     async def remove_all_tracks(self):
         """Remove all tracks and stop the player (if playing)"""
