@@ -70,7 +70,7 @@ class LibAVOpusAudio(LibAVAudio):
             # Reconnect if something happened during stream
             self.stream._close()
             self.stream.iter_data.close()
-            self.stream.reconnect(self.stream.pos)
+            self.stream.iter_data = self.stream._iter_av_packets(self.stream.pos)
             
             # Skip header
             next(self.stream.iter_data)
