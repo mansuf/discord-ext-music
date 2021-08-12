@@ -94,7 +94,8 @@ class MusicClient(VoiceClient):
             traceback.print_exception(type(err), err, err.__traceback__)
         _track = self._playlist.get_next_track()
         if _track:
-            await self.play(track)
+            async with self._lock:
+                self._play(_track, self._after)
 
     def register_after_callback(self, func: Callable[[Union[Exception, None], Union[Track, None]], Any]):
         """Register a callable function (can be coroutine function)
