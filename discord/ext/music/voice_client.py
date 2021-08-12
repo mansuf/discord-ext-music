@@ -108,7 +108,6 @@ class MusicClient(VoiceClient):
         if not self.encoder and not track.source.is_opus():
             self.encoder = opus.Encoder()
 
-        self._playlist.add_track(track)
         self._player = MusicPlayer(track, self, after=after)
         self._player.start()
 
@@ -126,6 +125,7 @@ class MusicClient(VoiceClient):
             if self.is_playing():
                 self._playlist.add_track(track)
                 return
+            self._playlist.add_track(track)
             self._play(track, self._after)
 
     def _stop(self):
