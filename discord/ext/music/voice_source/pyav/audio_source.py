@@ -1,3 +1,4 @@
+import av
 from .stream import LibAVStream
 from ..legacy import MusicSource
 from discord.oggparse import OggStream
@@ -63,7 +64,18 @@ class LibAVOpusAudio(LibAVAudio):
         self._ogg_stream = OggStream(self.stream).iter_packets()
     
     def read(self):
-        return next(self._ogg_stream, b'')
+        try:
+            return next(self._ogg_stream, b'')
+        except av.error.FFmpegError:
+            # Reconnect if something happened during stream
+            self.stream._close()
+            self.stream.iter_data.close()
+            self.stream.reconnect(self.stream.pos)
+            
+            # Skip header
+            next(self.stream.iter_data)
+
+            return next(self._ogg_stream, b'')
 
     def get_stream_durations(self):
         return self.stream.tell()

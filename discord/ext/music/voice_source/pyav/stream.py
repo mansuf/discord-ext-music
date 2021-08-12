@@ -92,24 +92,12 @@ class LibAVStream(io.RawIOBase):
     def _iter_av_packets(self, seek=None):
         self.reconnect(seek)
         while True:
-            try:
-                packet = next(self.demuxer, b'')
-            except av.error.FFmpegError:
-                # Fail to get packet such as invalidated session, etc
-                self._close()
-                self.reconnect(self.pos)
-                continue
+            packet = next(self.demuxer, b'')
 
             # If stream is exhausted, close connection
             if not packet:
                 self._close()
                 return b''
-            
-            # If packet is corrupted, reconnect it
-            if packet.is_corrupt:
-                self._close()
-                self.reconnect(self.pos)
-                continue
 
             # According PyAV if demuxer sending packet with attribute dts with value None
             # that means demuxer is sending dummy packet.
