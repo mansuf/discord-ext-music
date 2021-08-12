@@ -15,3 +15,9 @@ class Track:
         self.stream_url = stream_url
         self.source = source
         self.thumbnail = thumbnail
+
+    def __repr__(self) -> str:
+        return '<Track name="%s" url="%s">' % (
+            self.name,
+            self.url
+        )
