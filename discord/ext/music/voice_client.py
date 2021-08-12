@@ -20,7 +20,7 @@ class MusicClient(VoiceClient):
         self._after = self._call_after
 
         # Will be used for _stop()
-        self.__stop = asyncio.Event()
+        self._done = asyncio.Event()
         
         # This will be used if bot is leaving voice channel
         self._leaving = threading.Event()
@@ -113,7 +113,7 @@ class MusicClient(VoiceClient):
         self._player.start()
 
         # we are playing
-        self.__stop.clear()
+        self._done.clear()
 
     async def play(self, track: Track):
         if not self.is_connected():
@@ -130,7 +130,7 @@ class MusicClient(VoiceClient):
 
     def _stop(self):
         if self._player:
-            self.__stop.set()
+            self._done.set()
             self._player.stop()
             self._player = None
 

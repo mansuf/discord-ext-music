@@ -16,7 +16,7 @@ class MusicPlayer(AudioPlayer):
         self.track = track
         self._silence = Silence()
         self._leaving = client._leaving
-        self._stop = client.__stop
+        self._stop = client._done
 
         # For set_source()
         self._lock = client._lock
