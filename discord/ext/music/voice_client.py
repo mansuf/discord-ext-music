@@ -80,12 +80,12 @@ class MusicClient(VoiceClient):
         async with self._lock:
             await super().move_to(channel)
     
-    async def reconnect(self, reconnect=True, timeout=60):
+    async def reconnect(self, reconnect=True, timeout=10):
         """Reconnect from voice channel"""
         async with self._lock:
             await self.disconnect(force=True)
         await self.connect(reconnect=reconnect, timeout=timeout)
-        
+
     # Playback controls
 
     async def _call_after(self, err, track):
