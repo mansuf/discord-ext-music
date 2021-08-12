@@ -90,7 +90,7 @@ class MusicClient(VoiceClient):
 
     async def _call_after(self, err, track):
         if err:
-            print('Ignoring error %s: %s' % (err.__class__.__name__), str(err))
+            print('Ignoring error %s: %s' % (err.__class__.__name__, str(err)))
             traceback.print_exception(type(err), err, err.__traceback__)
         _track = self._playlist.get_next_track()
         if _track:
