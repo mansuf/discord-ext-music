@@ -8,7 +8,7 @@ class Track:
         name: str,
         url: str=None,
         stream_url: str=None,
-        thumbnail: bytes=None
+        thumbnail: str=None
     ) -> None:
         self.name = name
         self.url = url
