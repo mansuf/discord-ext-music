@@ -96,6 +96,12 @@ class LibAVStream(io.RawIOBase):
                 packet = next(self.demuxer, b'')
             except av.error.FFmpegError:
                 # Fail to get packet such as invalidated session, etc
+
+                # Close the stream and muxer to stop PyAV yelling some errors
+                self.stream.close()
+                self.muxer.close()
+
+                # Reconnect the stream
                 self.reconnect(self.pos)
                 continue
 
@@ -106,6 +112,11 @@ class LibAVStream(io.RawIOBase):
             
             # If packet is corrupted, reconnect it
             if packet.is_corrupt:
+                # Close the stream and muxer to stop PyAV yelling some errors
+                self.stream.close()
+                self.muxer.close()
+
+                # Reconnect the stream
                 self.reconnect(self.pos)
                 continue
 
