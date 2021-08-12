@@ -67,6 +67,7 @@ class LibAVStream(io.RawIOBase):
         self.pos += _seek_durations
 
         # Set up Encoder and Decoder
+        self._stream_buffer = LibAVIO()
         self.demuxer = self.stream.demux(audio=0)
         self.muxer = av.open(self._stream_buffer, 'w', format=format)
         self.output_stream = self.muxer.add_stream(codec, rate=rate)
@@ -78,7 +79,6 @@ class LibAVStream(io.RawIOBase):
             self.muxer.close()
         self.output_stream = None
         self.demuxer = None
-        self._stream_buffer = LibAVIO()
         self._stopped.set()
 
     def is_closed(self):
@@ -92,12 +92,22 @@ class LibAVStream(io.RawIOBase):
     def _iter_av_packets(self, seek=None):
         self.reconnect(seek)
         while True:
-            packet = next(self.demuxer, b'')
+            try:
+                packet = next(self.demuxer, b'')
+            except av.error.FFmpegError:
+                # Fail to get packet such as invalidated session, etc
+                self.reconnect(self.pos)
+                continue
 
             # If stream is exhausted, close connection
             if not packet:
                 self._close()
                 return b''
+            
+            # If packet is corrupted, reconnect it
+            if packet.is_corrupt:
+                self.reconnect(self.pos)
+                continue
 
             # According PyAV if demuxer sending packet with attribute dts with value None
             # that means demuxer is sending dummy packet.

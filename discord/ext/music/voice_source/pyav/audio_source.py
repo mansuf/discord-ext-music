@@ -64,18 +64,7 @@ class LibAVOpusAudio(LibAVAudio):
         self._ogg_stream = OggStream(self.stream).iter_packets()
     
     def read(self):
-        try:
-            return next(self._ogg_stream, b'')
-        except av.error.FFmpegError:
-            # Reconnect if something happened during stream
-            self.stream._close()
-            self.stream.iter_data.close()
-            self.stream.iter_data = self.stream._iter_av_packets(self.stream.pos)
-            
-            # Skip header
-            next(self.stream.iter_data)
-
-            return next(self._ogg_stream, b'')
+        return next(self._ogg_stream, b'')
 
     def get_stream_durations(self):
         return self.stream.tell()
