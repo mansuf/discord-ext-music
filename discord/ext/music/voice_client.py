@@ -138,6 +138,23 @@ class MusicClient(VoiceClient):
         self._done.clear()
 
     async def play(self, track: Track):
+        """Play a Track
+
+        This function is automatically add track to playlist,
+        even it still playing songs.
+        
+        Paramaters
+        -----------
+        track: :class:`Track`
+            Audio Track that we're gonna play.
+
+        Raises
+        -------
+        NotConnected
+            Not connected to voice
+        TypeError
+            "track" paramater is not :class:`Track`
+        """
         if not self.is_connected():
             raise NotConnected('Not connected to voice.')
 
