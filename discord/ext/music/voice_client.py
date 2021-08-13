@@ -168,6 +168,29 @@ class MusicClient(VoiceClient):
             self._playlist.add_track(track)
             self._play(track, self._after)
 
+    async def play_track_from_pos(self, pos: int):
+        """Play track from given pos
+        
+        Parameters
+        -----------
+        pos: :class:`int`
+            Track position that we want to play.
+        
+        Raises
+        -------
+        NotConnected
+            Not connected to voice
+        TrackNotExist
+            Given track position is not exist
+        """
+        if not self.is_connected():
+            raise NotConnected('Not connected to voice.')
+        async with self._lock:
+            if self.is_playing():
+                self._stop()
+            track = self._playlist.jump_to_pos(pos)
+            self._play(track, self._after)
+
     def _stop(self):
         if self._player:
             self._done.set()
@@ -302,16 +325,6 @@ class MusicClient(VoiceClient):
             track = self._playlist.get_previous_track()
             if track is None:
                 raise NoMoreSongs('no more songs in playlist')
-            self._play(track, self._after)
-
-    async def jump_to_pos(self, pos: int):
-        """Play track from given pos"""
-        if not self.is_connected():
-            raise NotConnected('Not connected to voice.')
-        async with self._lock:
-            if self.is_playing():
-                self._stop()
-            track = self._playlist.jump_to_pos(pos)
             self._play(track, self._after)
 
     async def remove_track(self, track: Track):
