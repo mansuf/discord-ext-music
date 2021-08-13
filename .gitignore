@@ -6,3 +6,8 @@
 
 # Internal test
 test*.py
+
+# Tox test
+.tox
+discord_ext_music.egg-info
+tox.ini
