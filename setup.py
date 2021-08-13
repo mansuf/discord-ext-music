@@ -42,7 +42,7 @@ extras_require = {
 
 packages = [
     'discord.ext.music',
-    'discord.ext.music.utils'
+    'discord.ext.music.utils',
     'discord.ext.music.voice_source',
     'discord.ext.music.voice_source.pyav'
 ]
