@@ -1,14 +1,14 @@
 import math
-from pydub import AudioSegment
 from typing import List, Dict
 from .utils.errors import EqualizerError
 from .utils.var import ContextVar
 
 # Try to import eq function in pydub module
 try:
+    from pydub import AudioSegment
     from pydub.scipy_effects import eq as equalizer
 except ImportError:
-    raise EqualizerError('scipy need to be installed in order to use equalizer') from None
+    raise EqualizerError('pydub and scipy need to be installed in order to use equalizer') from None
 
 class _EqualizerStruct:
     def __init__(self, freq, gain):
