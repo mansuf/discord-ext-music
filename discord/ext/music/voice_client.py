@@ -328,7 +328,7 @@ class MusicClient(VoiceClient):
             self._play(track, self._after)
 
     async def remove_track(self, track: Track):
-        """Remove a track
+        """Remove a track and stop the player (if same track as playing track)
         
         Parameters
         -----------
@@ -353,7 +353,7 @@ class MusicClient(VoiceClient):
             self._playlist.remove_track(track)
 
     async def remove_track_from_pos(self, pos: int):
-        """Remove a track from given position
+        """Remove a track from given position and stop the player (if same pos as playing pos)
 
         Parameters
         -----------
