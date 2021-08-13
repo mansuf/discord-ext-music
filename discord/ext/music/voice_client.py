@@ -180,10 +180,10 @@ class MusicClient(VoiceClient):
         Raises
         -------
         MusicNotPlaying
-            MusicClient not playing any audio
+            Not playing any audio
         """
         if not self.is_playing() or not self._player:
-            raise MusicNotPlaying('MusicClient Not playing any audio')
+            raise MusicNotPlaying('Not playing any audio')
         async with self._lock:
             self._stop()
 
@@ -198,11 +198,11 @@ class MusicClient(VoiceClient):
         Raises
         -------
         MusicNotPlaying
-            MusicClient not playing any audio     
+            Not playing any audio     
         """
 
         if not self.is_playing() or not self._player:
-            raise MusicNotPlaying('MusicClient Not playing any audio')
+            raise MusicNotPlaying('Not playing any audio')
         async with self._lock:
             self._player.pause(play_silence=play_silence)
 
@@ -214,12 +214,12 @@ class MusicClient(VoiceClient):
         MusicAlreadyPlaying
             Already playing audio
         MusicNotPlaying
-            MusicClient not playing any audio
+            Not playing any audio
         """
         if self.is_playing():
             raise MusicAlreadyPlaying('Already playing audio')
         elif not self._player:
-            raise MusicNotPlaying('MusicClient Not playing any audio')
+            raise MusicNotPlaying('Not playing any audio')
         async with self._lock:
             self._player.resume()
     
@@ -234,10 +234,10 @@ class MusicClient(VoiceClient):
         Raises
         -------
         MusicNotPlaying
-            MusicClient not playing any audio
+            Not playing any audio
         """
         if not self.is_playing() or not self._player:
-            raise MusicNotPlaying('MusicClient Not playing any audio')
+            raise MusicNotPlaying('Not playing any audio')
         async with self._lock:
             self._player.seek(seconds)
 
@@ -252,10 +252,10 @@ class MusicClient(VoiceClient):
         Raises
         -------
         MusicNotPlaying
-            MusicClient not playing any audio
+            Not playing any audio
         """
         if not self.is_playing() or not self._player:
-            raise MusicNotPlaying('MusicClient Not playing any audio')
+            raise MusicNotPlaying('Not playing any audio')
         async with self._lock:
             self._player.rewind(seconds)
 
