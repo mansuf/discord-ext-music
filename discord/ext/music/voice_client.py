@@ -242,7 +242,18 @@ class MusicClient(VoiceClient):
             self._player.seek(seconds)
 
     async def rewind(self, seconds: Union[int, float]):
-        """Jump back to specified durations"""
+        """Jump back to specified durations
+        
+        Parameters
+        -----------
+        seconds: Union[`int`, `float`]
+            Time to rewind in seconds
+
+        Raises
+        -------
+        MusicNotPlaying
+            MusicClient not playing any audio
+        """
         if not self.is_playing() or not self._player:
             raise MusicNotPlaying('MusicClient Not playing any audio')
         async with self._lock:
