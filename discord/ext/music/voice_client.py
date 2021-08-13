@@ -241,7 +241,7 @@ class MusicClient(VoiceClient):
 
     @property
     def source(self):
-        raise NotImplementedError
+        return self._player.source if self._player else None
     
     @source.setter
     def source(self, value):
