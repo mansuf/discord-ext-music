@@ -252,8 +252,3 @@ class MusicClient(VoiceClient):
         """Optional[:class:`Track`]: The audio track being played, if playing.
         """
         return self._player.track if self._player else None
-
-    async def set_track(self, track: Track):
-        if self._player is None:
-            raise MusicNotPlaying('MusicClient Not playing any audio')
-        await self._player.set_track(track)
