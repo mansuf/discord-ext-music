@@ -3,7 +3,7 @@ from typing import List, Union
 from .track import Track
 from .utils.errors import TrackNotExist
 
-__all__ = ('Playlist')
+__all__ = ('Playlist',)
 
 class Playlist:
     """a class representing playlist for tracks
