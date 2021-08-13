@@ -353,7 +353,18 @@ class MusicClient(VoiceClient):
             self._playlist.remove_track(track)
 
     async def remove_track_from_pos(self, pos: int):
-        """Remove a track from given position"""
+        """Remove a track from given position
+
+        Parameters
+        -----------
+        pos: :class:`int`
+            Track position that we want to remove.
+
+        Raises
+        -------
+        TrackNotExist
+            Given track is not exist
+        """
         track = self._playlist.get_track_from_pos(pos)
         if self.is_playing():
             _track = self._player.track
