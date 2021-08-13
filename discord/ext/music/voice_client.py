@@ -224,7 +224,18 @@ class MusicClient(VoiceClient):
             self._player.resume()
     
     async def seek(self, seconds: Union[int, float]):
-        """Jump forward to specified durations"""
+        """Jump forward to specified durations
+        
+        Parameters
+        -----------
+        seconds: Union[`int`, `float`]
+            Time to seek in seconds
+        
+        Raises
+        -------
+        MusicNotPlaying
+            MusicClient not playing any audio
+        """
         if not self.is_playing() or not self._player:
             raise MusicNotPlaying('MusicClient Not playing any audio')
         async with self._lock:
