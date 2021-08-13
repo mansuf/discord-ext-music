@@ -265,7 +265,15 @@ class MusicClient(VoiceClient):
         return self._player.get_stream_durations() if self._player else None
 
     async def next_track(self):
-        """Play next track"""
+        """Play next track
+        
+        Raises
+        -------
+        NotConnected
+            Not connected to voice.
+        NoMoreSongs
+            No more songs in playlist.
+        """
         if not self.is_connected():
             raise NotConnected('Not connected to voice.')
         async with self._lock:
