@@ -260,6 +260,8 @@ class MusicClient(VoiceClient):
             self._player.rewind(seconds)
 
     def get_stream_durations(self) -> Union[float, None]:
+        """Optional[:class:`float`]: Get current stream durations in seconds, if playing.
+        """
         return self._player.get_stream_durations() if self._player else None
 
     async def next_track(self):
