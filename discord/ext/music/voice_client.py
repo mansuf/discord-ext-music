@@ -184,6 +184,8 @@ class MusicClient(VoiceClient):
         """
         if not self._player:
             raise MusicNotPlaying('MusicClient Not playing any audio')
+        elif not self.is_playing():
+            raise MusicNotPlaying('MusicClient Not playing any audio')
         async with self._lock:
             self._stop()
 
