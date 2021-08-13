@@ -8,7 +8,7 @@ from discord import opus
 from .playlist import Playlist
 from .track import Track
 from .player import MusicPlayer
-from .utils.errors import MusicAlreadyPlaying, MusicNotPlaying, NoMoreSongs, NotConnected
+from .utils.errors import MusicAlreadyPlaying, MusicClientException, MusicNotPlaying, NoMoreSongs, NotConnected
 
 # This class implement discord.voice_client.VoiceClient
 # https://github.com/Rapptz/discord.py/blob/master/discord/voice_client.py#L175
@@ -344,7 +344,11 @@ class MusicClient(VoiceClient):
             _track = self._player.track
             if _track == track:
                 # Skip to next track if same track
-                await self.next_track()
+                try:
+                    await self.next_track()
+                except MusicClientException:
+                    # Ignore if next track is not exist
+                    pass
         async with self._lock:
             self._playlist.remove_track(track)
 
@@ -354,7 +358,11 @@ class MusicClient(VoiceClient):
         if self.is_playing():
             _track = self._player.track
             if _track == track:
-                await self.next_track()
+                try:
+                    await self.next_track()
+                except MusicClientException:
+                    # Ignore if next track is not exist
+                    pass
         async with self._lock:
             self._playlist.remove_track_from_pos(pos)
 
