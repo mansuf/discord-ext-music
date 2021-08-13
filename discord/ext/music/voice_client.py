@@ -10,11 +10,11 @@ from .track import Track
 from .player import MusicPlayer
 from .utils.errors import MusicAlreadyPlaying, MusicClientException, MusicNotPlaying, NoMoreSongs, NotConnected
 
-# This class implement discord.voice_client.VoiceClient
-# https://github.com/Rapptz/discord.py/blob/master/discord/voice_client.py#L175
-# with music control (play, stop, pause, resume, seek, rewind)
-# and playlist control (next, previous, jump_to, remove, remove_all, reset_pos)
 class MusicClient(VoiceClient):
+    """Same like :class:`discord.voice_client.VoiceClient` but with playback controls for music.
+    
+    Each coroutine functions are thread-safe.
+    """
     def __init__(self, client, channel):
         super().__init__(client, channel)
         self._after = self._call_after
