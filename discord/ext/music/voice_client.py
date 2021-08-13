@@ -105,6 +105,10 @@ class MusicClient(VoiceClient):
             raise TypeError('Expected a callable, got %s' % type(func))
         self._after = func
 
+    def add_track(self, track: Track):
+        """Add a track to playlist"""
+        self._playlist.add_track(track)
+
     def _play(self, track, after):
         if not self.encoder and not track.source.is_opus():
             self.encoder = opus.Encoder()
