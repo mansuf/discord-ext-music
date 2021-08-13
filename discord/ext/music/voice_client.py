@@ -143,7 +143,7 @@ class MusicClient(VoiceClient):
         This function is automatically add track to playlist,
         even it still playing songs.
         
-        Paramaters
+        Parameters
         -----------
         track: :class:`Track`
             Audio Track that we're gonna play.
