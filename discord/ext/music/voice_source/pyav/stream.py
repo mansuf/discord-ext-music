@@ -4,8 +4,8 @@ import io
 from .io import LibAVIO
 from ...utils.errors import IllegalSeek, LibAVError
 
-class LibAVStream(io.RawIOBase):
-    """A class represent LibAV Stream"""
+class LibAVAudioStream(io.RawIOBase):
+    """A file-like class represent LibAV audio-only stream"""
     def __init__(self, url, format, codec, rate, seek=None) -> None:
         self.url = url
         # Will be used later

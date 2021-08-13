@@ -1,5 +1,5 @@
 import av
-from .stream import LibAVStream
+from .stream import LibAVAudioStream
 from ..legacy import MusicSource
 from discord.oggparse import OggStream
 
@@ -17,7 +17,7 @@ class LibAVAudio(MusicSource):
 
 # For some reason, LibAVStream.read() with libopus codec
 # did not returning data sometimes.
-class _OpusStream(LibAVStream):
+class _OpusStream(LibAVAudioStream):
     def __init__(self, url) -> None:
         super().__init__(
             url,
