@@ -190,6 +190,19 @@ class MusicClient(VoiceClient):
             self._stop()
 
     async def pause(self, play_silence=True):
+        """Pauses the audio playing.
+
+        Parameters
+        -----------
+        play_silence: :class:`bool` (default: `True`)
+            if `True` play silence audio.
+
+        Raises
+        -------
+        MusicNotPlaying
+            MusicClient not playing any audio     
+        """
+
         if not self.is_playing() or not self._player:
             raise MusicNotPlaying('MusicClient Not playing any audio')
         async with self._lock:
