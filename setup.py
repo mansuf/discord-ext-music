@@ -12,7 +12,7 @@ with open('README.md') as r:
     readme = r.read()
 
 # Find version without importing it
-regex_version = re.compile(r'[0-9]{1}.[0-9]{1}.[0-9]{1,3}')
+regex_version = re.compile(r'[0-9]{1}.[0-9]{1,2}.[0-9]{1,3}')
 with open('discord/ext/music/__init__.py', 'r') as r:
     _version = regex_version.search(r.read())
 
@@ -65,14 +65,10 @@ setup(
     'Development Status :: 4 - Beta',
     'Intended Audience :: Developers',
     'License :: OSI Approved :: MIT License',  
-    'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.5',
-    'Programming Language :: Python :: 3.6',
-    'Programming Language :: Python :: 3.7',
     'Programming Language :: Python :: 3.8',
     'Programming Language :: Python :: 3.9',
     'Topic :: Software Development :: Libraries :: Python Modules',
     'Topic :: Multimedia :: Sound/Audio'
   ],
-  python_requires='>=3.5'
+  python_requires='>=3.8'
 )
