@@ -108,6 +108,16 @@ class MusicClient(VoiceClient):
     def register_after_callback(self, func: Callable[[Union[Exception, None], Union[Track, None]], Any]):
         """Register a callable function (can be coroutine function)
         for callback after player has done playing or error occured.
+
+        Parameters
+        ------------
+        func: Callable[[Union[`Exception`, None], Union[`Track`, None]], Any]
+            a callable function (can be coroutine function)
+        
+        Raises
+        --------
+        TypeError
+            Not a callable function
         """
         if not callable(func):
             raise TypeError('Expected a callable, got %s' % type(func))
