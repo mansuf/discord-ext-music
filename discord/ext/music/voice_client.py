@@ -175,6 +175,13 @@ class MusicClient(VoiceClient):
             self._player = None
 
     async def stop(self):
+        """Stop playing audio
+        
+        Raises
+        -------
+        MusicNotPlaying
+            MusicClient not playing any audio
+        """
         if not self._player:
             raise MusicNotPlaying('MusicClient Not playing any audio')
         async with self._lock:
