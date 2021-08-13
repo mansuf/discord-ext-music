@@ -40,9 +40,16 @@ extras_require = {
     ]
 }
 
+packages = [
+    'discord.ext.music',
+    'discord.ext.music.utils'
+    'discord.ext.music.voice_source',
+    'discord.ext.music.voice_source.pyav'
+]
+
 setup(
   name='discord-ext-music',         
-  packages=['discord.ext.music'],   
+  packages=packages,   
   version=version,
   license='MIT',
   description='An easy-to-use music extension for discord.py',
