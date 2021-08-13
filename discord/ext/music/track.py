@@ -1,5 +1,7 @@
 from .voice_source import MusicSource
 
+__all__ = ('Track')
+
 class Track:
     """a class containing MusicSource, name, url, stream url, thumbnail"""
     def __init__(

@@ -25,6 +25,8 @@ _SAMPLE_WIDTH = {
 # Valid channels from pydub
 _CHANNELS = [1,2]
 
+__all__ = ('Equalizer', 'PCMEqualizer', 'SubwooferPCMEqualizer')
+
 class Equalizer:
     """
     Equalizer class
