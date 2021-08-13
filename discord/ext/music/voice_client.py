@@ -259,7 +259,7 @@ class MusicClient(VoiceClient):
         async with self._lock:
             self._player.rewind(seconds)
 
-    def get_stream_duration(self) -> float:
+    def get_stream_durations(self) -> Union[float, None]:
         return self._player.get_stream_durations() if self._player else None
 
     async def next_track(self):
