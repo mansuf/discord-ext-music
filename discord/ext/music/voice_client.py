@@ -328,7 +328,18 @@ class MusicClient(VoiceClient):
             self._play(track, self._after)
 
     async def remove_track(self, track: Track):
-        """Remove a track"""
+        """Remove a track
+        
+        Parameters
+        -----------
+        track: :class:`Track`
+            A `Track` you want to remove
+        
+        Raises
+        -------
+        TrackNotExist
+            Given track is not exist
+        """
         if self.is_playing():
             _track = self._player.track
             if _track == track:
