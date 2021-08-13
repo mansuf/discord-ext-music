@@ -81,7 +81,15 @@ class MusicClient(VoiceClient):
             await super().move_to(channel)
     
     async def reconnect(self, reconnect=True, timeout=10):
-        """Reconnect from voice channel"""
+        """Disconnect forcefully from voice channel and connect it again
+        
+        Parameters
+        ------------
+        reconnect: :class:`bool`
+            Reconnect when connection is failing.
+        timeout: :class:`float`
+            The timeout for the connection.
+        """
         async with self._lock:
             await self.disconnect(force=True)
         await self.connect(reconnect=reconnect, timeout=timeout)
