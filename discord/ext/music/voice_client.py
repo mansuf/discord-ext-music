@@ -285,7 +285,15 @@ class MusicClient(VoiceClient):
             self._play(track, self._after)
 
     async def previous_track(self):
-        """Play previous track"""
+        """Play previous track
+        
+        Raises
+        -------
+        NotConnected
+            Not connected a voice.
+        NoMoreSongs
+            No more songs in playlist.
+        """
         if not self.is_connected():
             raise NotConnected('Not connected to voice.')
         async with self._lock:
