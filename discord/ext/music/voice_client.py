@@ -205,6 +205,7 @@ class MusicClient(VoiceClient):
         if self._player:
             self._done.set()
             self._player.stop()
+            self._player.join()
             self._player = None
 
     async def stop(self):
