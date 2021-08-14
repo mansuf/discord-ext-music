@@ -57,7 +57,7 @@ setup(
   long_description_content_type='text/markdown',
   author='Rahman Yusuf',              
   author_email='danipart4@gmail.com',
-  url='https://github.com/trollfist20/zippyshare-downloader',
+  url='https://github.com/mansuf/discord-ext-music',
   install_requires=requirements,
   extras_require=extras_require,
   include_package_data=True,
