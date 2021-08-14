@@ -107,6 +107,8 @@ class MusicClient(VoiceClient):
     # Playback controls
 
     async def _call_after(self, err, track):
+        print('_done', self._done.is_set())
+        print('_call_after triggered', track)
         if err:
             print('Ignoring error %s: %s' % (err.__class__.__name__, str(err)))
             traceback.print_exception(type(err), err, err.__traceback__)
@@ -196,16 +198,20 @@ class MusicClient(VoiceClient):
         if not self.is_connected():
             raise NotConnected('Not connected to voice.')
         async with self._lock:
-            if self.is_playing():
-                self._stop()
+            self._soft_stop()
             track = self._playlist.jump_to_pos(pos)
             self._play(track, self._after)
 
     def _stop(self):
         if self._player:
-            self._done.set()
             self._player.stop()
             self._player.join()
+            self._player = None
+
+    def _soft_stop(self):
+        if self._player:
+            self._done.set()
+            self._player.soft_stop()
             self._player = None
 
     async def stop(self):
@@ -311,8 +317,7 @@ class MusicClient(VoiceClient):
         if not self.is_connected():
             raise NotConnected('Not connected to voice.')
         async with self._lock:
-            if self.is_playing():
-                self._stop()
+            self._soft_stop()
             track = self._playlist.get_next_track()
             if track is None:
                 raise NoMoreSongs('no more songs in playlist')
@@ -331,8 +336,7 @@ class MusicClient(VoiceClient):
         if not self.is_connected():
             raise NotConnected('Not connected to voice.')
         async with self._lock:
-            if self.is_playing():
-                self._stop()
+            self._soft_stop()
             track = self._playlist.get_previous_track()
             if track is None:
                 raise NoMoreSongs('no more songs in playlist')

@@ -1,5 +1,6 @@
 import sys
 import logging
+import threading
 import time
 import asyncio
 import traceback
@@ -16,10 +17,24 @@ class MusicPlayer(AudioPlayer):
         self.track = track
         self._silence = Silence()
         self._leaving = client._leaving
-        self._stop = client._done
+        self._done = client._done
+
+        # Used for self.soft_stop()
+        self._soft_stop = False
 
         # For set_source()
         self._lock = client._lock
+
+    def run(self):
+        try:
+            self._do_run()
+        except Exception as exc:
+            self._current_error = exc
+            self.stop()
+        finally:
+            if not self._soft_stop:
+                self.source.cleanup()
+            self._call_after()
 
     def _do_run(self):
         self.loops = 0
@@ -75,11 +90,12 @@ class MusicPlayer(AudioPlayer):
             time.sleep(delay)
 
     def _call_after(self):
+        print('player', self, 'track', self.track)
         error = self._current_error
         track = self.track
 
         # Check if MusicClient.stop() is called
-        if self._stop.is_set():
+        if self._done.is_set():
             if error:
                 msg = 'Exception in voice thread {}'.format(self.name)
                 log.exception(msg, exc_info=error)
@@ -116,6 +132,27 @@ class MusicPlayer(AudioPlayer):
         self._play_silence = False
         super().resume(update_speaking=update_speaking)
 
+    def soft_stop(self):
+        """Stop the player but not the ``MusicSource``
+
+        `MusicSource` will be restarted from zero using `recreate()` method
+        
+        This will be used in:
+        - `MusicClient.play_track_from_pos()`
+        - `MusicClient.next_track()`
+        - `MusicClient.previous_track()`
+        """
+        self._soft_stop = True
+
+        # Stop the player
+        self.stop()
+
+        # Wait until it terminates
+        self.join()
+        
+        # Start from zero
+        self.source.recreate()
+        
     def _set_source(self, source):
         pass
 
@@ -127,10 +164,14 @@ class MusicPlayer(AudioPlayer):
             self.resume(update_speaking=False)
 
     def seek(self, seconds):
+        self.pause(update_speaking=False)
         self.source.seek(seconds)
+        self.resume(update_speaking=False)
 
     def rewind(self, seconds):
+        self.pause(update_speaking=False)
         self.source.rewind(seconds)
+        self.resume(update_speaking=False)
 
     def get_stream_durations(self):
         return self.source.get_stream_durations()

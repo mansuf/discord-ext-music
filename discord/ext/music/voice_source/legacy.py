@@ -36,6 +36,10 @@ class MusicSource(discord.AudioSource):
     seek, rewind, equalizer and volume built-in to AudioSource
     """
 
+    def recreate(self):
+        """Recreate audio source, useful for next and previous playback"""
+        raise NotImplementedError
+
     def seekable(self):
         """
         Check if this source support seek() and rewind() operations or not
@@ -182,6 +186,12 @@ class RawPCMAudio(MusicSource):
     def cleanup(self):
         self.stream.close()
 
+    def recreate(self):
+        if not self.seekable():
+            raise IllegalSeek('current stream doesn\'t support seek() operations')
+        with self._lock:
+            self.stream.seek(0, 0)
+
     def seekable(self):
         return self.stream.seekable()
 
@@ -246,6 +256,10 @@ class RawPCMAudio(MusicSource):
             # because seek in IO doesn't support float numbers
             seek = int(s_pos)
 
+            # Make sure seek position aren't negative numbers
+            if seek < 0:
+                seek = 0
+
             # Finally jump to specified positions
             self.stream.seek(seek, 0)
 
@@ -269,6 +283,10 @@ class RawPCMAudio(MusicSource):
             # convert to integer
             # because seek in IO doesn't support float numbers
             seek = int(c_pos)
+
+            # Make sure seek position aren't negative numbers
+            if seek < 0:
+                seek = 0
 
             # Finally jump to specified positions
             self.stream.seek(seek, 0)

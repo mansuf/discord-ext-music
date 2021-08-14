@@ -143,7 +143,7 @@ class LibAVAudioStream(io.RawIOBase):
         if self.durations is None:
             raise IllegalSeek('current stream doesn\'t support seek')
         with self._lock:
-            if seconds <= 0:
+            if seconds < 0:
                 self.close()
             elif seconds > self.durations:
                 self.close()
