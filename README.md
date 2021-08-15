@@ -75,7 +75,7 @@ pip install -U .[all]
 
 ```python
 from discord.ext.commands import Bot
-from discord.ext.music import MusicClient, WavAudio
+from discord.ext.music import MusicClient, WavAudio, Track
 
 bot = Bot()
 
