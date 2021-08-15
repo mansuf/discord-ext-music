@@ -37,6 +37,10 @@ extras_require = {
         'scipy',
         'miniaudio',
         'av'
+    ],
+    'docs': [
+        'sphinx',
+        'sphinx-book-theme'
     ]
 }
 
