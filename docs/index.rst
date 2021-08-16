@@ -6,10 +6,26 @@
 Welcome to discord-ext-music's documentation!
 =============================================
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+An easy to use music extension for discord.py_
 
+Features:
+----------
+
+- It's easy to use
+- Have all playback and playlist controls
+- Thread-safe playback controls
+- Built-in equalizer and volume adjuster for PCM codec audio 
+- Can play most supported sources from FFmpeg libraries and it embedded into python! 
+
+.. _discord.py: https://github.com/Rapptz/discord.py
+
+MusicClient :doc:`music_client`
+
+.. toctree::
+   :glob:
+   :maxdepth: 2
+
+   music_client   
 
 
 Indices and tables
