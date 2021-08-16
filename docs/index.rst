@@ -21,7 +21,7 @@ Features:
 
 Links
 ------
-- :ref:`api`
+- :doc:`api`
 
 Indices and tables
 ==================
