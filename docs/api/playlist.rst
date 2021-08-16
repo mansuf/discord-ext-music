@@ -1,7 +1,7 @@
-Track
-=======
+Playlist
+=========
 
 .. currentmodule:: discord.ext.music
 
-.. autoclass:: Track
+.. autoclass:: Playlist
     :members:

@@ -19,7 +19,7 @@ Features:
 
 .. _discord.py: https://github.com/Rapptz/discord.py
 
-API Documentation
+API Reference
 ------------------
 
 .. toctree::
