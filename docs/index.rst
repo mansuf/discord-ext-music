@@ -21,12 +21,6 @@ Features:
 
 MusicClient :doc:`music_client`
 
-.. toctree::
-   :glob:
-   :maxdepth: 2
-
-   music_client   
-
 
 Indices and tables
 ==================
