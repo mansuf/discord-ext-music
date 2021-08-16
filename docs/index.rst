@@ -23,11 +23,8 @@ API Documentation
 ------------------
 
 .. toctree::
+   :glob:
    :maxdepth: 2
-
-   api/*
-
-
 
 Indices and tables
 ==================
