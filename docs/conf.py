@@ -22,7 +22,7 @@ copyright = '2021, Rahman Yusuf'
 author = 'Rahman Yusuf'
 
 # The full version, including alpha/beta/rc tags
-release = '["v0.1.0"]'
+release = 'v0.1.0'
 
 
 # -- General configuration ---------------------------------------------------
@@ -31,6 +31,9 @@ release = '["v0.1.0"]'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'sphinx.ext.autodoc',
+    'sphinx.ext.extlinks',
+    'sphinx.ext.napoleon',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
