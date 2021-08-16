@@ -136,7 +136,13 @@ class MusicClient(VoiceClient):
         self._after = func
 
     def add_track(self, track: Track):
-        """Add a track to playlist"""
+        """Add a track to playlist
+        
+        Parameters
+        -----------
+        track: :class:`Track`
+            Audio Track that we're gonna play.
+        """
         self._playlist.add_track(track)
 
     def _play(self, track, after):
