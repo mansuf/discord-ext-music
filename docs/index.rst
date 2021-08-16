@@ -19,14 +19,9 @@ Features:
 
 .. _discord.py: https://github.com/Rapptz/discord.py
 
-API Reference
-------------------
-
-.. toctree::
-   :glob:
-   :maxdepth: 2
-
-   api/*
+Links
+------
+- :ref:`api`
 
 Indices and tables
 ==================

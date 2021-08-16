@@ -3,7 +3,22 @@ from .voice_source import MusicSource
 __all__ = ('Track',)
 
 class Track:
-    """a class containing MusicSource, name, url, stream url, thumbnail"""
+    """A audio track containing audio source, name, url, stream_url, thumbnail
+    
+    
+    Attributes
+    -----------
+    source: :class:`MusicSource`
+        The audio source of this track
+    name: :class:`str`
+        Name of this track
+    url: :class:`str`
+        Webpage url of this track
+    stream_url: :class:`str`
+        Streamable url of this track
+    thumbnail: :class:`str`
+        Valid thumbnail url of this track
+    """
     def __init__(
         self,
         source: MusicSource,
