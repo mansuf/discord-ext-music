@@ -19,7 +19,14 @@ Features:
 
 .. _discord.py: https://github.com/Rapptz/discord.py
 
-MusicClient :doc:`music_client`
+API Documentation
+------------------
+
+.. toctree::
+   :maxdepth: 2
+
+   api/*
+
 
 
 Indices and tables
