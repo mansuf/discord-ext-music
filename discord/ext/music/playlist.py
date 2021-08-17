@@ -44,12 +44,33 @@ class Playlist:
         self._reorder_id_tracks(self._tracks)
 
     def add_track(self, track: Track) -> None:
-        """Add a track"""
+        """Add a track
+        
+        Parameters
+        -----------
+        track: :class:`Track`
+            The audio track that we want to put in playlist.
+        """
         with self._lock:
             self._put(track)
 
     def jump_to_pos(self, pos: int) -> Track:
-        """Change playlist pos and return :class:`Track` from given position """
+        """Change playlist pos and return :class:`Track` from given position
+        
+        Parameters
+        -----------
+        pos: :class:`int`
+            Track position that we want jump to
+
+        Raises
+        -------
+        TrackNotExist
+            Given track position is not exist
+
+        Return
+        -------
+        :class:`Track`
+        """
         with self._lock:
             track = self.get_track_from_pos(pos)
             raw_track = self._get_raw_track(track)
@@ -57,12 +78,34 @@ class Playlist:
         return track
 
     def remove_track(self, track: Track) -> None:
-        """Remove a track"""
+        """Remove a track
+        
+        Parameters
+        -----------
+        track: :class:`Track`
+            The audio track that we want to remove from playlist.
+
+        Raises
+        -------
+        TrackNotExist
+            Given track is not exist
+        """
         with self._lock:
             self._remove(track)
 
     def remove_track_from_pos(self, pos: int) -> None:
-        """Remove a track from given position"""
+        """Remove a track from given position
+        
+        Parameters
+        -----------
+        pos: :class:`int`
+            Track position that we want remove from playlist
+
+        Raises
+        -------
+        TrackNotExist
+            Given track position is not exist
+        """
         with self._lock:
             track = self.get_track_from_pos(pos)
             self._remove(track)
@@ -79,20 +122,55 @@ class Playlist:
             self._pos = 0
 
     def is_track_exist(self, track: Track) -> bool:
-        """Check if given track is exist in this playlist"""
+        """Check if given track is exist in this playlist
+        
+        Parameters
+        -----------
+        track: :class:`Track`
+            The audio track that we want to check
+        
+        Return
+        -------
+        :class:`bool`
+        """
         t = self._get_raw_track(track)
         return t != None
     
     def get_all_tracks(self) -> List[Track]:
-        """Get all tracks in this playlist"""
+        """Get all tracks in this playlist
+        
+        Return
+        -------
+        List[:class:`Track`]
+        """
         return [t['track'] for t in self._tracks]
 
     def get_current_track(self) -> Track:
-        """Get current track in current position"""
+        """Get current track in current position
+        
+        Return
+        -------
+        :class:`Track`
+        """
         return self.get_track_from_pos(self._pos)
 
     def get_track_from_pos(self, pos: int) -> Track:
-        """Get a track from given position"""
+        """Get a track from given position
+        
+        Parameters
+        -----------
+        pos: :class:`int`
+            Track position that we want remove from playlist
+
+        Raises
+        -------
+        TrackNotExist
+            Given track position is not exist
+
+        Return
+        -------
+        :class:`Track`
+        """
         try:
             t = self._tracks[pos]
         except IndexError:
@@ -101,7 +179,12 @@ class Playlist:
             return t['track']
 
     def get_next_track(self) -> Union[Track, None]:
-        """Get next track"""
+        """Get next track
+        
+        Return
+        -------
+        Union[:class:`Track`, `None`]
+        """
         with self._lock:
             try:
                 t = self._tracks[self._pos + 1]
@@ -112,7 +195,12 @@ class Playlist:
                 return t['track']
 
     def get_previous_track(self) -> Union[Track, None]:
-        """Get previous track"""
+        """Get previous track
+        
+        Return
+        -------
+        Union[:class:`Track`, `None`]
+        """
         with self._lock:
             try:
                 t = self._tracks[self._pos - 1]
