@@ -33,3 +33,38 @@ Playlist
 
 .. autoclass:: Playlist
     :members:
+
+Exceptions
+-----------
+
+.. autoexception:: EqualizerError
+
+.. autoexception:: ConverterError
+
+.. autoexception:: WorkerError
+
+.. autoexception:: IllegalSeek
+
+.. autoexception:: InvalidMP3
+
+.. autoexception:: InvalidFLAC
+
+.. autoexception:: InvalidVorbis
+
+.. autoexception:: MiniaudioError
+
+.. autoexception:: LibAVError
+
+.. autoexception:: TrackNotExist
+
+.. autoexception:: MusicClientException
+
+.. autoexception:: MusicNotPlaying
+
+.. autoexception:: MusicAlreadyPlaying
+
+.. autoexception:: NoMoreSongs
+
+.. autoexception:: NotConnected
+
+
