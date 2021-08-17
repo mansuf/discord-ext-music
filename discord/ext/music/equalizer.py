@@ -7,8 +7,10 @@ from .utils.var import ContextVar
 try:
     from pydub import AudioSegment
     from pydub.scipy_effects import eq as equalizer
+    EQ_OK = True
 except ImportError:
-    raise EqualizerError('pydub and scipy need to be installed in order to use equalizer') from None
+    EQ_OK = False
+    
 
 class _EqualizerStruct:
     def __init__(self, freq, gain):
@@ -54,6 +56,9 @@ class PCMEqualizer(Equalizer):
         if you try to add it, it will raise :class:`EqualizerError`.
     """
     def __init__(self, freqs: List[dict]=None):
+        if not EQ_OK:
+            raise EqualizerError('pydub and scipy need to be installed in order to use equalizer')
+
         if freqs is not None:
             # Check the frequencys
             self._check_freqs(freqs)
