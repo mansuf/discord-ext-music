@@ -11,3 +11,6 @@ test*.py
 .tox
 discord_ext_music.egg-info
 tox.ini
+
+# Sphinx docs build directory
+docs/_build
