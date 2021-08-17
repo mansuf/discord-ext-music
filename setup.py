@@ -40,7 +40,7 @@ extras_require = {
     ],
     'docs': [
         'sphinx',
-        'sphinx-book-theme'
+        'furo'
     ]
 }
 
