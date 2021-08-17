@@ -69,11 +69,8 @@ class Playlist:
 
         Returns
         --------
-        The audio track from given position
-
-        Return type
-        -------
         :class:`Track`
+            The audio track from given position
         """
         with self._lock:
             track = self.get_track_from_pos(pos)
@@ -135,11 +132,8 @@ class Playlist:
         
         Returns
         --------
-        `True` if exist, or `False` if not exist
-
-        Return type
-        -------
         :class:`bool`
+            `True` if exist, or `False` if not exist
         """
         t = self._get_raw_track(track)
         return t != None
@@ -149,11 +143,8 @@ class Playlist:
         
         Returns
         --------
-        All tracks in playlist
-
-        Return type
-        -------
         List[:class:`Track`]
+            All tracks in playlist
         """
         return [t['track'] for t in self._tracks]
 
@@ -162,11 +153,8 @@ class Playlist:
         
         Returns
         --------
-        The current track in current position
-
-        Return type
-        -------
         :class:`Track`
+            The current track in current position
         """
         return self.get_track_from_pos(self._pos)
 
@@ -185,11 +173,8 @@ class Playlist:
 
         Returns
         --------
-        The track from given position
-
-        Return type
-        -------
         :class:`Track`
+            The track from given position
         """
         try:
             t = self._tracks[pos]
@@ -203,11 +188,8 @@ class Playlist:
         
         Returns
         --------
-        The next track of this playlist
-
-        Return type
-        -------
         Union[:class:`Track`, None]
+            The next track of this playlist
         """
         with self._lock:
             try:
@@ -223,11 +205,8 @@ class Playlist:
         
         Returns
         --------
-        The previous track of this playlist
-
-        Return type
-        -------
         Union[:class:`Track`, None]
+            The previous track of this playlist
         """
         with self._lock:
             try:
