@@ -20,8 +20,6 @@ Tracks
 Track
 ~~~~~~
 
-.. attributetable:: Track
-
 .. autoclass:: Track
     :members:
 

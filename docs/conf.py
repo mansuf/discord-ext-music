@@ -50,7 +50,10 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 
 # Intersphinx mapping
-intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
+    'discord': ('https://discordpy.readthedocs.io/en/stable', None)
+}
 
 # -- Options for HTML output -------------------------------------------------
 

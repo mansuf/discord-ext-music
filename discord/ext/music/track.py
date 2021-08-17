@@ -5,6 +5,18 @@ __all__ = ('Track',)
 class Track:
     """A audio track containing audio source, name, url, stream_url, thumbnail
     
+    Parameters
+    -----------
+    source: :class:`MusicSource`
+        The audio source of this track
+    name: :class:`str`
+        Name of this track
+    url: :class:`str`
+        Webpage url of this track
+    stream_url: :class:`str`
+        Streamable url of this track
+    thumbnail: :class:`str`
+        Valid thumbnail url of this track
     
     Attributes
     -----------

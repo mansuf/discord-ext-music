@@ -21,7 +21,18 @@ Features:
 
 Links
 ------
-- :doc:`api`
+
+.. toctree::
+   :glob:
+   :maxdepth: 2
+
+   api
+
+.. toctree::
+   :hidden:
+   :caption: Development
+
+   Github repository <https://github.com/mansuf/discord-ext-music>
 
 Indices and tables
 ==================

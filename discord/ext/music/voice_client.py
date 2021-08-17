@@ -21,9 +21,25 @@ __all__ = (
 )
 
 class MusicClient(VoiceClient):
-    """Same like :class:`discord.voice_client.VoiceClient` but with playback controls for music.
+    """Same like :class:`discord.VoiceClient` but with playback controls for music.
     
     Each coroutine functions are thread-safe.
+
+    You usually don't create these, you can get it from :meth:`discord.VoiceChannel.connect`
+
+    Warning
+    --------
+    It is important to add parameter `cls` with value :class:`MusicClient` to :meth:`discord.VoiceChannel.connect`,
+    otherwise you wont get these features. For example:
+
+    .. code-block:: python3
+        
+        # Use this method
+        music_client = await voice_channel.connect(cls=MusicClient)
+
+        # But not this method
+        music_client = await voice_channel.connect()
+        
     """
     def __init__(self, client, channel):
         super().__init__(client, channel)
