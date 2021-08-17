@@ -67,7 +67,11 @@ class Playlist:
         TrackNotExist
             Given track position is not exist
 
-        Return
+        Returns
+        --------
+        The audio track from given position
+
+        Return type
         -------
         :class:`Track`
         """
@@ -129,7 +133,11 @@ class Playlist:
         track: :class:`Track`
             The audio track that we want to check
         
-        Return
+        Returns
+        --------
+        `True` if exist, or `False` if not exist
+
+        Return type
         -------
         :class:`bool`
         """
@@ -139,7 +147,11 @@ class Playlist:
     def get_all_tracks(self) -> List[Track]:
         """Get all tracks in this playlist
         
-        Return
+        Returns
+        --------
+        All tracks in playlist
+
+        Return type
         -------
         List[:class:`Track`]
         """
@@ -148,7 +160,11 @@ class Playlist:
     def get_current_track(self) -> Track:
         """Get current track in current position
         
-        Return
+        Returns
+        --------
+        The current track in current position
+
+        Return type
         -------
         :class:`Track`
         """
@@ -167,7 +183,11 @@ class Playlist:
         TrackNotExist
             Given track position is not exist
 
-        Return
+        Returns
+        --------
+        The track from given position
+
+        Return type
         -------
         :class:`Track`
         """
@@ -181,9 +201,13 @@ class Playlist:
     def get_next_track(self) -> Union[Track, None]:
         """Get next track
         
-        Return
+        Returns
+        --------
+        The next track of this playlist
+
+        Return type
         -------
-        Union[:class:`Track`, `None`]
+        Union[:class:`Track`, None]
         """
         with self._lock:
             try:
@@ -197,9 +221,13 @@ class Playlist:
     def get_previous_track(self) -> Union[Track, None]:
         """Get previous track
         
-        Return
+        Returns
+        --------
+        The previous track of this playlist
+
+        Return type
         -------
-        Union[:class:`Track`, `None`]
+        Union[:class:`Track`, None]
         """
         with self._lock:
             try:
