@@ -263,8 +263,18 @@ class SubwooferPCMEqualizer(PCMEqualizer):
         self._freqs = freqs
         super().__init__(freqs)
 
+    def add_frequency(self, freq: int, gain: Union[int, float]):
+        raise NotImplementedError
+
+    def remove_frequency(self, freq: int):
+        raise NotImplementedError
+
     @property
     def volume(self) -> float:
+        """Optional[:class:`float`]: The subwoofer volume in float numbers
+        
+        This property can also be used to change the subwoofer volume.
+        """
         return self._volume
 
     @volume.setter
@@ -284,6 +294,5 @@ class SubwooferPCMEqualizer(PCMEqualizer):
         """
         Set frequency gain in dB.
         """
-        for freq in self._freqs:
-            super().set_gain(**freq)
+        super().set_gain(**self._freq)
         self._volume = dB
