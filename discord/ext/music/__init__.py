@@ -15,4 +15,5 @@ from .track import *
 from .playlist import *
 from .voice_source import *
 from .utils import *
+from .equalizer import *
 
