@@ -1,5 +1,5 @@
 import math
-from typing import List, Dict
+from typing import List, Union
 from .utils.errors import EqualizerError
 from .utils.var import ContextVar
 
@@ -33,7 +33,7 @@ class Equalizer:
     """
     Equalizer class
 
-    This was used for converting original data to equalized audio data
+    This was used for converting original audio data to equalized audio data
     """
     def convert(self, data: bytes):
         """
@@ -45,15 +45,26 @@ class Equalizer:
 
 class PCMEqualizer(Equalizer):
     """
-    Equalizer class
+    PCMEqualizer class
 
-    Only PCM codecs (16-bit 48KHz) support this
+    Only PCM codec (16-bit 48KHz) support this
 
-    freqs: :class:`List[Dict]` (optional, default: `None`)
-        a list containing dicts, each dict has frequency (in Hz) and gain (in dB) inside it.
+    Warning
+    --------
+    You must have **scipy** and **pydub** installed, otherwise you will get error.
+
+    Parameters
+    -----------
+    freqs: Optional[List[:class:`dict`]]
+        a list containing dict, each dict has frequency (in Hz) and gain (in dB) inside it.
         For example, [{"freq": 20, "gain": 20}, ...]
         You cannot add same frequencys,
         if you try to add it, it will raise :class:`EqualizerError`.
+    
+    Raises
+    -------
+    EqualizerError
+        pydub and scipy is not installed
     """
     def __init__(self, freqs: List[dict]=None):
         if not EQ_OK:
@@ -118,10 +129,20 @@ class PCMEqualizer(Equalizer):
         min_freq = min(freqs)
         return max_freq - min_freq
 
-    def add_frequency(self, freq: int, gain: int):
-        """
-        Add a frequency, 
-        raise :class:`EqualizerError` if given frequency is already exist.
+    def add_frequency(self, freq: int, gain: Union[int, float]):
+        """Add a frequency
+
+        Parameters
+        -----------
+        freq: :class:`int`
+            The frequency that want to add
+        gain: Union[:class:`int`, :class:`float`]
+            The gain frequency
+
+        Raises
+        -------
+        EqualizerError
+            given frequency is already exist
         """
         _ = {"freq": freq, "gain": gain}
 
@@ -140,9 +161,17 @@ class PCMEqualizer(Equalizer):
             ))
 
     def remove_frequency(self, freq: int):
-        """
-        Remove a frequency, 
-        raise :class:`EqualizerError` if given frequency is not exist.
+        """Remove a frequency
+
+        Parameters
+        -----------
+        freq: :class:`int`
+            The frequency that want to add
+
+        Raises
+        -------
+        EqualizerError
+            given frequency is not exist
         """
         _ = {"freq": freq, "gain": 0}
 
@@ -158,7 +187,18 @@ class PCMEqualizer(Equalizer):
     def set_gain(self, freq: int, gain: int):
         """
         Set frequency gain in dB,
-        raise :class:`EqualizerError` if given frequency is not exist.
+
+        Parameters
+        -----------
+        freq: :class:`int`
+            The frequency want to increase the gain
+        gain: Union[:class:`int`, :class:`float`]
+            The value want to increase or lower
+
+        Raises
+        -------
+        EqualizerError
+            given frequency is not exist
         """
         _ = {"freq": freq, "gain": gain}
 
@@ -172,8 +212,12 @@ class PCMEqualizer(Equalizer):
         eq.gain = gain
 
     def convert(self, data):
-        """
-        Convert audio data to equalized audio data
+        """Convert audio data to equalized audio data
+
+        Parameters
+        -----------
+        data: :class:`bytes`
+            The audio data
         """
         _ = AudioSegment(data, metadata=self._eq_args)
         ctx = ContextVar(_)
@@ -199,10 +243,12 @@ class SubwooferPCMEqualizer(PCMEqualizer):
     """
     An easy to use PCMEqualizer for subwoofer
 
-    The frequency range is 60Hz.
+    The base frequency is 60Hz.
 
     **Only PCM codecs support this**
     
+    Parameters
+    -----------
     volume: :class:`float`
         Set initial volume as float percent.
         For example, 0.5 for 50% and 1.75 for 175%.
