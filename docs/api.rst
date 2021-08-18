@@ -32,6 +32,15 @@ Playlist
 .. autoclass:: Playlist
     :members:
 
+Equalizers
+-----------
+
+.. autoclass:: Equalizer
+
+.. autoclass:: PCMEqualizer
+
+.. autoclass:: SubwooferPCMEqualizer
+
 Exceptions
 -----------
 
