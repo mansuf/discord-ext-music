@@ -123,8 +123,6 @@ class MusicClient(VoiceClient):
     # Playback controls
 
     async def _call_after(self, err, track):
-        print('_done', self._done.is_set())
-        print('_call_after triggered', track)
         if err:
             print('Ignoring error %s: %s' % (err.__class__.__name__, str(err)))
             traceback.print_exception(type(err), err, err.__traceback__)
@@ -139,7 +137,7 @@ class MusicClient(VoiceClient):
 
         Parameters
         ------------
-        func: Callable[[Union[`Exception`, None], Union[`Track`, None]], Any]
+        func: Callable[[Union[:class:`Exception`, None], Union[:class:`Track`, None]], Any]
             a callable function (can be coroutine function)
         
         Raises
@@ -290,7 +288,7 @@ class MusicClient(VoiceClient):
         
         Parameters
         -----------
-        seconds: Union[`int`, `float`]
+        seconds: Union[:class:`int`, :class:`float`]
             Time to seek in seconds
         
         Raises
@@ -308,7 +306,7 @@ class MusicClient(VoiceClient):
         
         Parameters
         -----------
-        seconds: Union[`int`, `float`]
+        seconds: Union[:class:`int`, :class:`float`]
             Time to rewind in seconds
 
         Raises
@@ -425,6 +423,7 @@ class MusicClient(VoiceClient):
 
     @property
     def source(self):
+        """Optional[:class:`AudioSource`]: The audio source being played, if playing."""
         return self._player.source if self._player else None
     
     @source.setter
