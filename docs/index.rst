@@ -26,6 +26,8 @@ Links
    :glob:
    :maxdepth: 2
 
+   installation
+   quick_usage
    api
 
 .. toctree::

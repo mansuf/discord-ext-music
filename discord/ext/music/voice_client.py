@@ -423,7 +423,7 @@ class MusicClient(VoiceClient):
 
     @property
     def source(self):
-        """Optional[:class:`AudioSource`]: The audio source being played, if playing."""
+        """Optional[:class:`MusicSource`]: The audio source being played, if playing."""
         return self._player.source if self._player else None
     
     @source.setter

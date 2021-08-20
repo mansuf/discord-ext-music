@@ -45,13 +45,16 @@ class Equalizer:
 
 class PCMEqualizer(Equalizer):
     """
-    PCMEqualizer class
+    A equalizer for Signed-PCM codec
 
-    Only PCM codec (16-bit 48KHz) support this
+    The audio specifications must be 16-bit 48KHz
 
     Warning
     --------
-    You must have **scipy** and **pydub** installed, otherwise you will get error.
+    You must have `scipy`_ and `pydub`_ installed, otherwise you will get error.
+
+    .. _scipy: https://pypi.org/project/scipy/
+    .. _pydub: https://pypi.org/project/pydub/
 
     Parameters
     -----------
@@ -241,11 +244,9 @@ class PCMEqualizer(Equalizer):
 
 class SubwooferPCMEqualizer(PCMEqualizer):
     """
-    An easy to use PCMEqualizer for subwoofer
+    An easy to use :class:`PCMEqualizer` for subwoofer
 
     The base frequency is 60Hz.
-
-    **Only PCM codecs support this**
     
     Parameters
     -----------
@@ -294,5 +295,5 @@ class SubwooferPCMEqualizer(PCMEqualizer):
         """
         Set frequency gain in dB.
         """
-        super().set_gain(**self._freq)
         self._volume = dB
+        super().set_gain(**self._freq)

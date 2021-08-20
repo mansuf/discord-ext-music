@@ -15,7 +15,7 @@ from youtube_search_requests import AsyncYoutubeSearch, AsyncYoutubeSession
 from discord.ext.commands import Bot, Context
 from discord.ext.music.voice_client import MusicClient
 from discord.ext.music.track import Track
-from discord.ext.music.voice_source.pyav import LibAVOpusAudio
+from discord.ext.music.voice_source.av import LibAVOpusAudio
 from discord.ext.music.utils.errors import IllegalSeek, MusicNotPlaying, NoMoreSongs
 
 # Set prefix

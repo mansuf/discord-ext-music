@@ -6,18 +6,6 @@ class EqualizerError(DiscordException):
     """
     pass
 
-class ConverterError(DiscordException):
-    """
-    Raised when something happened in Converter class
-    """
-    pass
-
-class WorkerError(DiscordException):
-    """
-    Raised when something happened in Worker class
-    """
-    pass
-
 class IllegalSeek(DiscordException):
     """
     Raised when MusicSource trying to seek
@@ -42,6 +30,12 @@ class InvalidVorbis(DiscordException):
     Raised when audio data is not vorbis codec
     """
     pass
+
+class InvalidWAV(DiscordException):
+    """
+    Raised when audio data is not WAV format
+    """
+
 
 class MiniaudioError(DiscordException):
     """

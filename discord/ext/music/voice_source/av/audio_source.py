@@ -1,14 +1,30 @@
-import av
-from .stream import LibAVAudioStream
+import io
 from ..legacy import MusicSource
 from discord.oggparse import OggStream
+
+# Try to import LibAVAudioStream
+try:
+    from .stream import LibAVAudioStream
+    AV_OK = True
+except ImportError:
+    AV_OK = False
+    # Try to create LibAVAudioStream without methods
+    class LibAVAudioStream(io.RawIOBase):
+        pass
 
 __all__ = (
     'LibAVAudio', 'LibAVOpusAudio'
 )
 
 class LibAVAudio(MusicSource):
-    """Represents embedded FFmpeg libraries audio source."""
+    """Represents embedded FFmpeg-based audio source.
+    
+    Warning
+    --------
+    You must have `av`_ installed, otherwise it didn't work.
+
+    .. _av: https://pypi.org/project/av/
+    """
     def is_opus(self):
         # This must return True
         # Otherwise it will encode to opus codec and caused crash
@@ -36,7 +52,7 @@ class _OpusStream(LibAVAudioStream):
             return data
 
 class LibAVOpusAudio(LibAVAudio):
-    """Represents embedded FFmpeg libraries Opus audio source.
+    """Represents embedded FFmpeg-based Opus audio source.
 
     There is no volume adjuster and equalizer for now, 
     because some problems.
@@ -50,13 +66,13 @@ class LibAVOpusAudio(LibAVAudio):
     ------------
     url: :class:`str`
         Valid URL or file location
-    stream: :class:`_OpusStream`
+    stream: :class:`io.RawIOBase`
         a file-like object that returning ogg opus encoded data
 
     Raises
     --------
-    IllegalSeek
-        current stream doesn't support seek() operations
+    :class:`LibAVError`
+        Something happened when opening connection stream url.
     """
     def __init__(self, url_or_file: str) -> None:
         self.url = url_or_file

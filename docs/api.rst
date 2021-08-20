@@ -36,19 +36,60 @@ Equalizers
 -----------
 
 .. autoclass:: Equalizer
+    :members:
 
 .. autoclass:: PCMEqualizer
+    :members:
 
 .. autoclass:: SubwooferPCMEqualizer
+    :members:
+
+Music sources
+--------------
+
+Legacy music sources
+~~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: MusicSource
+    :members:
+
+.. autoclass:: RawPCMAudio
+    :members:
+
+.. autoclass:: WAVAudio
+    :members:
+
+Miniaudio music sources
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: Miniaudio
+    :members:
+
+.. autoclass:: MP3toPCMAudio
+    :members:
+
+.. autoclass:: FLACtoPCMAudio
+    :members:
+
+.. autoclass:: VorbistoPCMAudio
+    :members:
+
+.. autoclass:: WAVtoPCMAudio
+    :members:
+
+PyAV / Embedded FFmpeg libraries music sources
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autoclass:: LibAVAudio
+    :members:
+
+.. autoclass:: LibAVOpusAudio
+    :members:
 
 Exceptions
 -----------
 
 .. autoexception:: EqualizerError
-
-.. autoexception:: ConverterError
-
-.. autoexception:: WorkerError
 
 .. autoexception:: IllegalSeek
 
@@ -57,6 +98,8 @@ Exceptions
 .. autoexception:: InvalidFLAC
 
 .. autoexception:: InvalidVorbis
+
+.. autoexception:: InvalidWAV
 
 .. autoexception:: MiniaudioError
 

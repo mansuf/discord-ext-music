@@ -25,7 +25,7 @@ except EqualizerError:
 
 __all__ = (
     'MusicSource','Silence', 'RawPCMAudio',
-    'WavAudio'
+    'WAVAudio'
 )
 
 log = logging.getLogger(__name__)
@@ -49,14 +49,32 @@ class MusicSource(discord.AudioSource):
         raise False
 
     def seek(self, seconds: float):
-        """
-        Jump forward to specified durations
+        """Jump forward to specified durations
+
+        Parameters
+        -----------
+        seconds: :class:`float`
+            The duration in seconds that we want to jump forward
+
+        Raises
+        -------
+        :class:`IllegalSeek`
+            current stream doesn't support seek() operations
         """
         raise NotImplementedError()
     
     def rewind(self, seconds: float):
-        """
-        Jump back to specified durations
+        """Jump back to specified durations
+
+        Parameters
+        -----------
+        seconds: :class:`float`
+            The duration in seconds that we want to jump backward
+
+        Raises
+        -------
+        :class:`IllegalSeek`
+            current stream doesn't support seek() operations
         """
         raise NotImplementedError()
 
@@ -64,7 +82,10 @@ class MusicSource(discord.AudioSource):
         """
         Get current stream durations in seconds
 
-        return :class:`float`
+        Returns
+        --------
+        :class:`float`
+            The current stream duration in seconds
         """
         raise NotImplementedError()
 
@@ -73,14 +94,22 @@ class MusicSource(discord.AudioSource):
         Set volume in float percentage
 
         For example, 0.5 = 50%, 1.5 = 150%
+
+        Parameters
+        -----------
+        volume: :class:`volume`
+            Set volume to music source
         """
         raise NotImplementedError()
 
     def set_equalizer(self, equalizer: Equalizer=None):
         """
-        Set a equalizer to MusicSource.
+        Set a :class:`Equalizer` to MusicSource.
 
-        You must have `scipy` installed in order to use equalizer.
+        Parameters
+        -----------
+        equalizer: :class:`Equalizer`
+            Set equalizer to music source
         """
         raise NotImplementedError()
 
@@ -106,11 +135,6 @@ class RawPCMAudio(MusicSource):
     -----------
     stream: :term:`py:file object`
         A file-like object that reads byte data representing raw PCM.
-
-    Raises
-    --------
-    IllegalSeek
-        current stream doesn't support seek() operations
     """
     def __init__(
         self,
@@ -203,7 +227,7 @@ class RawPCMAudio(MusicSource):
 
     def set_equalizer(self, eq: PCMEqualizer=None):
         if not EQ_OK:
-            raise EqualizerError('scipy need to be installed in order to use equalizer')
+            raise EqualizerError('pydub and scipy need to be installed in order to use equalizer')
         if eq is not None:
             if not isinstance(eq, PCMEqualizer):
                 raise EqualizerError('{0.__class__.__name__} is not PCMEqualizer'.format(eq))
@@ -294,9 +318,9 @@ class RawPCMAudio(MusicSource):
             # Change current stream durations
             self._durations = c_pos / 1000 * 20 / OpusEncoder.FRAME_SIZE
 
-class WavAudio(RawPCMAudio):
+class WAVAudio(RawPCMAudio):
     """
-    Represents wav audio stream
+    Represents WAV audio stream
 
     stream: :class:`io.BufferedIOBase`
         file-like object
