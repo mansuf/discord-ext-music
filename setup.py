@@ -48,7 +48,7 @@ packages = [
     'discord.ext.music',
     'discord.ext.music.utils',
     'discord.ext.music.voice_source',
-    'discord.ext.music.voice_source.pyav'
+    'discord.ext.music.voice_source.av'
 ]
 
 setup(
