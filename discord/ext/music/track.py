@@ -37,13 +37,18 @@ class Track:
         name: str,
         url: str=None,
         stream_url: str=None,
-        thumbnail: str=None
+        thumbnail: str=None,
+        **kwargs
     ) -> None:
         self.name = name
         self.url = url
         self.stream_url = stream_url
         self.source = source
         self.thumbnail = thumbnail
+
+        # Set up atttributes from kwargs
+        for key in kwargs:
+            setattr(self, key, kwargs[key])
 
     def __repr__(self) -> str:
         return '<Track name="%s" url="%s">' % (
