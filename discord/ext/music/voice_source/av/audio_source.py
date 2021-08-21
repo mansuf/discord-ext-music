@@ -89,6 +89,7 @@ class LibAVOpusAudio(LibAVAudio):
         self._ogg_stream = OggStream(self.stream).iter_packets()
     
     def recreate(self):
+        self.stream.close()
         self.stream = _OpusStream(self.url)
         self._ogg_stream = OggStream(self.stream).iter_packets()
 
