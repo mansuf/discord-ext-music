@@ -62,6 +62,7 @@ Links
    :hidden:
    :caption: Development
 
+   changelog
    Github repository <https://github.com/mansuf/discord-ext-music>
 
 Indices and tables
