@@ -9,6 +9,7 @@ You must have discord.py (with voice support), youtube-search-requests, youtube-
 import discord
 import argparse
 import asyncio
+import os
 import youtube_dl
 from typing import Any, Dict, Tuple, Union
 from youtube_search_requests import AsyncYoutubeSearch, AsyncYoutubeSession
@@ -19,7 +20,8 @@ from discord.ext.music.voice_source.av import LibAVOpusAudio
 from discord.ext.music.utils.errors import IllegalSeek, MusicNotPlaying, NoMoreSongs
 
 # Set prefix
-prefix = '$'
+_env_prefix = os.environ.get('PREFIX')
+prefix = '$' if not _env_prefix else _env_prefix
 
 # Set up asyncio event loop
 loop = asyncio.get_event_loop()
@@ -133,6 +135,36 @@ async def get_music_client(ctx: Context) -> Union[bool, MusicClient]:
         music_client = voice_user
     return music_client
 
+async def announce_next_song(err: Exception, track: Track):
+    """Announce the next song"""
+    # If playlist is reached the end of tracks
+    # do nothing
+    if not track:
+        return
+
+    channel = track.channel
+    user_id = track.user_id
+
+    # If error detected, tell the user that bot has trouble playing this song
+    if err:
+        embed = discord.Embed()
+        embed.add_field(name='Failed to play song', value='[%s](%s) [<@!%s>]\nError: `%s`' % (
+            track.name,
+            track.url,
+            user_id,
+            str(err)
+        ))
+
+    # Send the announcer
+    embed = discord.Embed()
+    embed.set_thumbnail(url=track.thumbnail)
+    embed.add_field(name='Now playing', value='[%s](%s) [<@!%s>]' % (
+        track.name,
+        track.url,
+        user_id,
+    ))
+    await channel.send(embed=embed)
+
 # Play command
 @client.command()
 async def play(ctx: Context, *, query):
@@ -142,6 +174,9 @@ async def play(ctx: Context, *, query):
     # We're failed to connect to voice channel
     if not music_client:
         return
+
+    # Set announcer
+    music_client.register_after_callback(announce_next_song)
 
     # Get stream url (if success)
     success, info, stream_url = await get_stream_url(query)
@@ -154,7 +189,9 @@ async def play(ctx: Context, *, query):
         info['title'],
         info['webpage_url'],
         info['url'],
-        info['thumbnail']
+        info['thumbnail'],
+        channel=ctx.channel, # Text channel for annouce the next song
+        user_id=ctx.message.author.id # User that request this song
     )
 
     # Normally when you call MusicClient.play() it automatically add to playlist
