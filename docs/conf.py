@@ -12,6 +12,7 @@
 #
 import os
 import sys
+import re
 sys.path.insert(0, os.path.abspath('..'))
 
 
@@ -21,8 +22,18 @@ project = 'discord-ext-music'
 copyright = '2021, Rahman Yusuf'
 author = 'Rahman Yusuf'
 
+# Find version without importing it
+regex_version = re.compile(r'[0-9]{1}.[0-9]{1,2}.[0-9]{1,3}')
+with open('../discord/ext/music/__init__.py', 'r') as r:
+    _version = regex_version.search(r.read())
+
+if _version is None:
+    raise RuntimeError('version is not set')
+
+version = _version.group()
+
 # The full version, including alpha/beta/rc tags
-release = 'v0.1.0'
+release = version
 
 
 # -- General configuration ---------------------------------------------------
