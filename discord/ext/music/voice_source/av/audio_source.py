@@ -14,7 +14,7 @@ except ImportError as e:
 
         # Throw the error and tell the user to add this to Enviroments
         # Because we can't fix this inside python
-        raise ImportError('Cannot import av, add "LD_PRELOAD=%s" to environment to fix this' % lib) from None
+        raise ImportError('Cannot import av, do this command "export LD_PRELOAD=%s" to fix this' % lib) from None
 
     AV_OK = False
     # Try to create LibAVAudioStream without methods
