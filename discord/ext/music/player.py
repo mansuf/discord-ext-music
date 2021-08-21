@@ -19,6 +19,9 @@ class MusicPlayer(AudioPlayer):
         self._leaving = client._leaving
         self._done = client._done
 
+        # For play the next song after done playing
+        self.next_song = client._play_next_song
+
         # Used for self.soft_stop()
         self._soft_stop = False
 
@@ -83,16 +86,14 @@ class MusicPlayer(AudioPlayer):
             if not data:
                 self.stop()
                 break
-            
+
             play_audio(data, encode=not self.source.is_opus())
             next_time = self._start + self.DELAY * self.loops
             delay = max(0, self.DELAY + (next_time - time.perf_counter()))
             time.sleep(delay)
 
     def _call_after(self):
-        print('player', self, 'track', self.track)
         error = self._current_error
-        track = self.track
 
         # Check if MusicClient.stop() is called
         if self._done.is_set():
@@ -102,7 +103,13 @@ class MusicPlayer(AudioPlayer):
                 print(msg, file=sys.stderr)
                 traceback.print_exception(type(error), error, error.__traceback__)
             return
-        elif self.after is not None:
+
+        # Play the next song
+        fut = asyncio.run_coroutine_threadsafe(self.next_song(), self.client.loop)
+        track = fut.result()
+
+        if self.after is not None:
+            # Check if after function is coroutine or not
             if asyncio.iscoroutinefunction(self.after):
                 fut = asyncio.run_coroutine_threadsafe(self.after(error, track), self.client.loop)
                 exc = fut.exception()
@@ -122,7 +129,6 @@ class MusicPlayer(AudioPlayer):
             log.exception(msg, exc_info=error)
             print(msg, file=sys.stderr)
             traceback.print_exception(type(error), error, error.__traceback__)
-
 
     def pause(self, *, update_speaking=True, play_silence=True):
         self._play_silence = play_silence

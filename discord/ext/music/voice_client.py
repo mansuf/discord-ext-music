@@ -43,7 +43,7 @@ class MusicClient(VoiceClient):
     """
     def __init__(self, client, channel):
         super().__init__(client, channel)
-        self._after = self._call_after
+        self._after = None
 
         # Will be used for _stop()
         self._done = asyncio.Event()
@@ -122,23 +122,31 @@ class MusicClient(VoiceClient):
 
     # Playback controls
 
-    async def _call_after(self, err, track):
-        if err:
-            print('Ignoring error %s: %s' % (err.__class__.__name__, str(err)))
-            traceback.print_exception(type(err), err, err.__traceback__)
-        _track = self._playlist.get_next_track()
-        if _track:
-            async with self._lock:
-                self._play(_track, self._after)
+    async def _play_next_song(self):
+        # If disconnected then do nothing.
+        if not self.is_connected():
+            return
+        
+        # Play the next song
+        async with self._lock:
+            track = self._playlist.get_next_track()
+            if track:
+                self._play(track, self._after)
+
+        return track
+
 
     def register_after_callback(self, func: Callable[[Union[Exception, None], Union[Track, None]], Any]):
         """Register a callable function (can be coroutine function)
-        for callback after player has done playing or error occured.
+        for callback after player has done playing and play the next song or error occured.
 
         Parameters
         ------------
         func: Callable[[Union[:class:`Exception`, None], Union[:class:`Track`, None]], Any]
-            a callable function (can be coroutine function)
+            a callable function (can be coroutine function) that accept 2 parameters: :class:`Exception`
+            and :class:`Track`.
+            That :class:`Exception` is for exception in the player (if error happened) and 
+            :class:`Track` is for the next audio track. 
         
         Raises
         --------
