@@ -6,7 +6,16 @@ from discord.oggparse import OggStream
 try:
     from .stream import LibAVAudioStream
     AV_OK = True
-except ImportError:
+except ImportError as e:
+    msg = str(e)
+    # Find error "cannot allocate memory in static TLS block" in ARM-based CPU
+    if 'cannot allocate memory in static TLS block' in msg:
+        lib = msg.replace(': cannot allocate memory in static TLS block', '')
+
+        # Throw the error and tell the user to add this to Enviroments
+        # Because we can't fix this inside python
+        raise ImportError('Cannot import av, add "LD_PRELOAD=%s" to environment to fix this' % lib) from None
+
     AV_OK = False
     # Try to create LibAVAudioStream without methods
     class LibAVAudioStream(io.RawIOBase):
