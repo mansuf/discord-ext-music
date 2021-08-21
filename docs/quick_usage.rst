@@ -4,7 +4,7 @@ Quick Usage
 .. code-block:: python3
 
     from discord.ext.commands import Bot
-    from discord.ext.music import MusicClient, WavAudio, Track
+    from discord.ext.music import MusicClient, WAVAudio, Track
 
     bot = Bot()
 
@@ -13,7 +13,7 @@ Quick Usage
         voice_user = ctx.message.author.voice
         music_client = await voice_user.channel.connect(cls=MusicClient)
         track = Track(
-            WavAudio('audio.wav'), # AudioSource
+            WAVAudio('audio.wav'), # AudioSource
             'This is audio' # name
         )
         await music_client.play(track)
