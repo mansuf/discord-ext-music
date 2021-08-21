@@ -147,8 +147,9 @@ class LibAVAudioStream(io.RawIOBase):
                 self.close()
             elif seconds > self.durations:
                 self.close()
+            if self.stream:
+                self.stream.seek(seconds)
             self.pos = seconds
-            self.iter_data = self._iter_av_packets(seconds)
 
     def tell(self):
         return self.pos
