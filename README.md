@@ -1,3 +1,5 @@
+[![pypi-total-downloads](https://img.shields.io/pypi/dm/discord-ext-music?label=DOWNLOADS&style=for-the-badge)](https://pypi.org/project/discord-ext-music)
+
 # discord-ext-music
 
 An easy-to-use music extension for [discord.py](https://github.com/Rapptz/discord.py)
