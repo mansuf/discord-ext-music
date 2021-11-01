@@ -164,7 +164,7 @@ class Playlist:
         Parameters
         -----------
         pos: :class:`int`
-            Track position that we want remove from playlist
+            Track position that we want retrieve from playlist
 
         Raises
         -------
