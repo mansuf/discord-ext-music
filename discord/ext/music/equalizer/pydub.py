@@ -30,8 +30,6 @@ class pydubEqualizer(Equalizer):
 
     Parameters
     -----------
-    stream: :class:`io.BufferedIOBase`
-        The audio stream that want to equalize.
     freqs: Optional[List[:class:`dict`]]
         a list containing dict, each dict has frequency (in Hz) and gain (in dB) inside it.
         For example, [{"freq": 20, "gain": 20}, ...]
@@ -44,11 +42,11 @@ class pydubEqualizer(Equalizer):
         pydub and scipy is not installed
     """
 
-    def __init__(self, stream: io.BufferedIOBase, freqs: List[dict]=None):
+    def __init__(self, freqs: List[dict]=None):
         if not EQ_OK:
             raise pydubError('pydub and scipy need to be installed in order to use pydubEqualizer')
         
-        self.stream = stream
+        self.stream = None # type: io.BufferedIOBase
         self._buffered = None
 
         if freqs is not None:
@@ -69,6 +67,10 @@ class pydubEqualizer(Equalizer):
             "frame_rate": frame_rate,
             "frame_width": channels * sample_width
         }
+    
+    def setup(self, stream):
+        super().setup(stream)
+        self.stream = self.__stream__
 
     def _determine_bandwidth(self, freqs):
         if len(freqs) == 1:
@@ -246,13 +248,13 @@ class pydubSubwooferEqualizer(Equalizer):
         Set initial volume as float percent.
         For example, 0.5 for 50% and 1.75 for 175%.
     """
-    def __init__(self, stream: io.BufferedIOBase, volume: float=0.5):
+    def __init__(self, volume: float=0.5):
         self._freq = 60
         freqs = [{
             "freq": self._freq,
             "gain": 1 # initialization
         }]
-        self._eq = pydubEqualizer(stream, freqs)
+        self._eq = pydubEqualizer(freqs)
         self.volume = volume
 
     @property
@@ -281,6 +283,9 @@ class pydubSubwooferEqualizer(Equalizer):
         Set frequency gain in dB.
         """
         self._eq.set_gain(self._freq, dB)
+
+    def setup(self, stream):
+        self._eq.setup(stream)
 
     def read(self):
         return self._eq.read()
