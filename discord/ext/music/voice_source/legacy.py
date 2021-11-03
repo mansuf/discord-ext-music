@@ -148,6 +148,9 @@ class RawPCMAudio(MusicSource):
             else:
                 data = self.stream.read(OpusEncoder.FRAME_SIZE)
 
+            if len(data) != OpusEncoder.FRAME_SIZE:
+                return b''
+
             # Change volume audio
             if self._volume is None:
                 return data
