@@ -1,6 +1,6 @@
 import math
+import io
 
-from io import BufferedIOBase
 from typing import List, Union
 from discord.opus import _OpusStruct as OpusStruct
 from .base import Equalizer
@@ -44,11 +44,12 @@ class pydubEqualizer(Equalizer):
         pydub and scipy is not installed
     """
 
-    def __init__(self, stream: BufferedIOBase, freqs: List[dict]=None):
+    def __init__(self, stream: io.BufferedIOBase, freqs: List[dict]=None):
         if not EQ_OK:
             raise pydubError('pydub and scipy need to be installed in order to use pydubEqualizer')
         
         self.stream = stream
+        self._buffered = None
 
         if freqs is not None:
             # Parse the frequencys
@@ -80,7 +81,7 @@ class pydubEqualizer(Equalizer):
         duplicate = []
         new_freqs = {} # key: freq, value: gain
         for data in freqs:
-            freq = data.get('freqs')
+            freq = data.get('freq')
             gain = data.get('gain')
 
             if not freq:
@@ -103,8 +104,11 @@ class pydubEqualizer(Equalizer):
         if freq and not isinstance(freq, int):
             raise ValueError('freq "%s" is not integer type' % freq)
         
-        if gain and (not isinstance(gain, float) or not isinstance(gain, int)):
-            raise ValueError('gain "%s" is not integer or float type')
+        if gain:
+            if isinstance(gain, int) or isinstance(gain, float):
+                pass
+            else:
+                raise ValueError('gain "%s" is not integer or float type' % gain)
 
     def add_frequency(self, freq: int, gain: Union[int, float]):
         """Add a frequency
@@ -172,30 +176,63 @@ class pydubEqualizer(Equalizer):
             raise ValueError('frequency %s is not exist' % freq)
         self._freqs[freq] = gain
 
-    def read(self):
-        # The equalizer cannot convert audio if duration is too small (ex: 20ms)
-        # they will reproduce noisy sound.
-        # So the pydubEqualizer must read audio data for at least 1 second
-        # and then equalize it and move it to buffered equalized audio data.
-
-        # 1 second duration
-        _ = AudioSegment(self.stream.read(50 * OpusStruct.FRAME_SIZE))
-        segment = None
-
-        # Determine the bandwidth
-        bandwidth = self._determine_bandwidth(list(self._freqs))
-
-        # Equalize the audio
-        for frequency, gain in self._freqs.items():
-            try:
-                if segment is None:
-                    segment = equalizer(_, frequency, bandwidth, gain_dB=gain)
-                else:
-                    segment = equalizer(segment, frequency, bandwidth, gain_dB=gain)
-            except Exception:
-                raise pydubError('equalizing audio data failed')
+    def _read_buffered_data(self):
+        # Read the buffered data
+        data = self._buffered.read(OpusStruct.FRAME_SIZE)
         
-        return segment.raw_data
+        if not data:
+            # For re-use
+            self._buffered = None
+            return None
+        elif len(data) != OpusStruct.FRAME_SIZE:
+            # For re-use
+            self._buffered = None
+
+            return b''
+        else:
+            return data
+
+    def read(self):
+        while True:
+            if self._buffered is None:
+                # The equalizer cannot convert audio if duration is too small (ex: 20ms)
+                # they will reproduce noisy sound.
+                # So the pydubEqualizer must read audio data for at least 1 second
+                # and then equalize it and move it to buffered equalized audio data.
+
+                data = self.stream.read(50 * OpusStruct.FRAME_SIZE)
+
+                if not data:
+                    return b''
+
+                # 1 second duration
+                _ = AudioSegment(data, metadata=self._eq_args)
+                segment = None
+
+                # Determine the bandwidth
+                bandwidth = self._determine_bandwidth(list(self._freqs))
+
+                # Equalize the audio
+                for frequency, gain in self._freqs.items():
+                    try:
+                        if segment is None:
+                            segment = equalizer(_, frequency, bandwidth, gain_dB=gain)
+                        else:
+                            segment = equalizer(segment, frequency, bandwidth, gain_dB=gain)
+                    except Exception:
+                        raise pydubError('equalizing audio data failed')
+                
+                # Make buffered data
+                self._buffered = io.BytesIO(segment.raw_data)
+
+                final_data = self._read_buffered_data()
+            else:
+                final_data = self._read_buffered_data()
+                if final_data is None:
+                    continue
+            
+            return final_data
+            
 
 class pydubSubwooferEqualizer(Equalizer):
     """
@@ -209,14 +246,14 @@ class pydubSubwooferEqualizer(Equalizer):
         Set initial volume as float percent.
         For example, 0.5 for 50% and 1.75 for 175%.
     """
-    def __init__(self, stream: BufferedIOBase, volume: float):
-        self.volume = volume
+    def __init__(self, stream: io.BufferedIOBase, volume: float=0.5):
         self._freq = 60
         freqs = [{
             "freq": self._freq,
-            "gain": self.volume
+            "gain": 1 # initialization
         }]
         self._eq = pydubEqualizer(stream, freqs)
+        self.volume = volume
 
     @property
     def volume(self) -> float:
@@ -244,3 +281,6 @@ class pydubSubwooferEqualizer(Equalizer):
         Set frequency gain in dB.
         """
         self._eq.set_gain(self._freq, dB)
+
+    def read(self):
+        return self._eq.read()
