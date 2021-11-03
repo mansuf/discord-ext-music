@@ -5,23 +5,11 @@ import logging
 import audioop
 import wave
 import io
-from io import IOBase
+
+from io import BufferedIOBase
 from discord.opus import _OpusStruct as OpusEncoder
 from ..utils.errors import EqualizerError, IllegalSeek
-
-# Try to import equalizer module
-try:
-    from ..equalizer import PCMEqualizer, Equalizer
-    EQ_OK = True
-except EqualizerError:
-    # If failed to import equalizer module
-    # Re-create Equalizer class with no methods
-    class Equalizer:
-        def convert(self):
-            raise NotImplementedError
-    class PCMEqualizer(Equalizer):
-        pass
-    EQ_OK = False
+from ..equalizer import Equalizer
 
 __all__ = (
     'MusicSource','Silence', 'RawPCMAudio',
@@ -138,74 +126,33 @@ class RawPCMAudio(MusicSource):
     """
     def __init__(
         self,
-        stream: IOBase,
+        stream: BufferedIOBase,
         volume: float=0.5,
     ):
         self.stream = stream
         self._durations = 0
-        self._eq = None
+        self._eq = None # type: Equalizer
         self._lock = threading.Lock()
         self._buffered_eq = None
-        self._volume = max(volume, 0.0)
+
+        if volume is not None:
+            self._volume = max(volume, 0.0)
+        else:
+            self._volume = None
 
     def read(self):
-        while True:
+        with self._lock:
+            # Read equalized audio data
             if self._eq is not None:
-                # At this point if RawPCMAudio using PCMEqualizer,
-                # the equalizer cannot convert audio if duration is too small (ex: 20ms)
-                # they will reproduce noisy sound.
-                # So the RawPCMAudio must read audio data at least for 1 second
-                # and then equalize it and move it to buffered equalized audio data.
-
-                def equalize(self, result=False):
-                    # The source will read the stream at least 1 second duration
-                    data = self.stream.read(OpusEncoder.FRAME_SIZE * 50) # 1 second duration
-
-                    # Return "exhausted" bytes to prevent re-reading stream
-                    if not data:
-                        return io.BytesIO(b'exhausted')
-
-                    # And then convert / equalize it
-                    eq_data = self._eq.convert(data)
-
-                    # Store it in buffered equalized audio data
-                    buffered_eq = io.BytesIO(eq_data)
-
-                    if result:
-                        return buffered_eq
-
-                if self._buffered_eq is None:
-                    self._buffered_eq = equalize(self, True)
-
-                # Read the buffered equalized audio data
-                data = self._buffered_eq.read(OpusEncoder.FRAME_SIZE)
-
-                if not data:
-                    self._buffered_eq = None
-                    continue
-                elif len(data) != OpusEncoder.FRAME_SIZE:
-                    return b''
-                self._durations += 0.020 # 20ms
-                if self._volume is None:
-                    return data
-                else:
-                    return audioop.mul(data, 2, min(self._volume, 2.0))
+                data = self._eq.read()
             else:
-                if self._buffered_eq is not None:
-                    # Make sure that buffered eq is exhausted
-                    data = self._buffered_eq.read(OpusEncoder.FRAME_SIZE)
-                    if not data:
-                        self._buffered_eq = None
-                        continue
-                else:
-                    data = self.stream.read(OpusEncoder.FRAME_SIZE)
-                if len(data) != OpusEncoder.FRAME_SIZE:
-                    return b''
-                self._durations += 0.020 # 20ms
-                if self._volume is None:
-                    return data
-                else:
-                    return audioop.mul(data, 2, min(self._volume, 2.0))
+                data = self.stream.read(OpusEncoder.FRAME_SIZE)
+
+            # Change volume audio
+            if self._volume is None:
+                return data
+            else:
+                return audioop.mul(data, 2, min(self._volume, 2.0))
     
     def cleanup(self):
         self.stream.close()
@@ -225,13 +172,13 @@ class RawPCMAudio(MusicSource):
     def set_volume(self, volume: float):
         self._volume = max(volume, 0.0)
 
-    def set_equalizer(self, eq: PCMEqualizer=None):
-        if not EQ_OK:
-            raise EqualizerError('pydub and scipy need to be installed in order to use equalizer')
+    def set_equalizer(self, eq: Equalizer=None):
         if eq is not None:
-            if not isinstance(eq, PCMEqualizer):
-                raise EqualizerError('{0.__class__.__name__} is not PCMEqualizer'.format(eq))
-        self._eq = eq
+            if not isinstance(eq, Equalizer):
+                raise EqualizerError('{0.__class__.__name__} is not Equalizer'.format(eq))
+        with self._lock:
+            eq.setup(self.stream)
+            self._eq = eq
 
     # -------------------------------------------
     # Formula seek and rewind for PCM-based Audio
