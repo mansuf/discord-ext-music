@@ -17,14 +17,6 @@ class Equalizer:
     def read(self):
         """Read audio stream and return equalized audio data."""
         raise NotImplementedError
-    
-    def seek(self, offset, whence):
-        """Seek directly to the audio stream."""
-        raise NotImplementedError
-    
-    def seekable(self):
-        """Check if the audio stream is seekable"""
-        return False
 
     def close(self):
         """Close audio stream and do some cleanup to the equalizer."""
