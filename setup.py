@@ -47,6 +47,7 @@ extras_require = {
 packages = [
     'discord.ext.music',
     'discord.ext.music.utils',
+    'discord.ext.music.opus_encoder',
     'discord.ext.music.equalizer',
     'discord.ext.music.voice_source',
     'discord.ext.music.voice_source.av'
