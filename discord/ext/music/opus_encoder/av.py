@@ -2,7 +2,7 @@ import av
 import io
 import struct
 
-class LibAVOpusEncoder:
+class LibAVEncoder:
     SAMPLING_RATE = 48000
     CHANNELS = 2
     FRAME_LENGTH = 20  # in milliseconds
