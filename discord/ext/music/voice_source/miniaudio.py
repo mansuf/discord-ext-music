@@ -118,7 +118,7 @@ class MP3toPCMAudio(Miniaudio):
         c_data = await loop.run_in_executor(None, lambda: read_data(cls, filename))
         return cls(c_data, volume, converted=True)
 
-
+    @classmethod
     def _decode(self, data):
         try:
             miniaudio.mp3_get_info(data)
@@ -207,6 +207,7 @@ class FLACtoPCMAudio(Miniaudio):
         c_data = await loop.run_in_executor(None, lambda: read_data(cls, filename))
         return cls(c_data, volume, converted=True)
 
+    @classmethod
     def _decode(self, data):
         try:
             miniaudio.flac_get_info(data)
@@ -295,6 +296,7 @@ class VorbistoPCMAudio(Miniaudio):
         c_data = await loop.run_in_executor(None, lambda: read_data(cls, filename))
         return cls(c_data, volume, converted=True)
 
+    @classmethod
     def _decode(self, data):
         try:
             miniaudio.vorbis_get_info(data)
@@ -383,6 +385,7 @@ class WAVtoPCMAudio(Miniaudio):
         c_data = await loop.run_in_executor(None, lambda: read_data(cls, filename))
         return cls(c_data, volume, converted=True)
 
+    @classmethod
     def _decode(self, data):
         try:
             miniaudio.wav_get_info(data)
