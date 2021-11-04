@@ -1,10 +1,11 @@
 import asyncio
 import traceback
 import threading
+import os
 
 from typing import Callable, Any, Union
 from discord.voice_client import VoiceClient
-from discord import opus
+from .opus_encoder import get_opus_encoder
 from .playlist import Playlist
 from .track import Track
 from .player import MusicPlayer
@@ -16,6 +17,7 @@ from .utils.errors import (
     NotConnected
 )
 
+_OpusEncoder = get_opus_encoder(os.environ.get('OPUS_ENCODER'))
 __all__ = (
     'MusicClient',
 )
@@ -169,7 +171,7 @@ class MusicClient(VoiceClient):
 
     def _play(self, track, after):
         if not self.encoder and not track.source.is_opus():
-            self.encoder = opus.Encoder()
+            self.encoder = _OpusEncoder
 
         self._player = MusicPlayer(track, self, after=after)
         self._player.start()
