@@ -10,11 +10,9 @@ def get_opus_encoder(enc=None):
 
     if enc:
         try:
-            encoder = _opus_encoders[enc]
+            return _opus_encoders[enc]
         except KeyError:
             raise ValueError('invalid opus encoder') from None
-        else:
-            return encoder
     else:
         if AV_OK:
             return _opus_encoders['av']
