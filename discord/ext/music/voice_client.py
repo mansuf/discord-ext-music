@@ -171,7 +171,7 @@ class MusicClient(VoiceClient):
 
     def _play(self, track, after):
         if not self.encoder and not track.source.is_opus():
-            self.encoder = _OpusEncoder
+            self.encoder = _OpusEncoder()
 
         self._player = MusicPlayer(track, self, after=after)
         self._player.start()
