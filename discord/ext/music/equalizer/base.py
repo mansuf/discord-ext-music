@@ -10,6 +10,13 @@ class Equalizer:
     def __init__(self):
         self.__stream__ = None # type: io.BufferedIOBase
 
+    @property
+    def stream(self) -> io.BufferedIOBase:
+        """:class:`io.BufferedIOBase`: Return the audio stream"""
+        if self.__stream__ is None:
+            raise RuntimeError('setup() is not called')
+        return self.__stream__
+
     def setup(self, stream):
         """Initialize audio stream to Equalizer
         

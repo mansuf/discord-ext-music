@@ -45,8 +45,7 @@ class pydubEqualizer(Equalizer):
     def __init__(self, freqs: List[dict]=None):
         if not EQ_OK:
             raise pydubError('pydub and scipy need to be installed in order to use pydubEqualizer')
-        
-        self.stream = None # type: io.BufferedIOBase
+
         self._buffered = None
 
         if freqs is not None:
@@ -67,10 +66,6 @@ class pydubEqualizer(Equalizer):
             "frame_rate": frame_rate,
             "frame_width": channels * sample_width
         }
-    
-    def setup(self, stream):
-        super().setup(stream)
-        self.stream = self.__stream__
 
     def _determine_bandwidth(self, freqs):
         if len(freqs) == 1:
