@@ -3,6 +3,13 @@ import io
 import struct
 
 class LibAVEncoder:
+    """New Opus encoder using PyAV.
+    
+    This opus encoder has cool features when compared to native encoder, such as:
+    - Less CPU usage
+    - No `Segmentation Fault` when encoding many audio sources.
+    
+    """
     SAMPLING_RATE = 48000
     CHANNELS = 2
     FRAME_LENGTH = 20  # in milliseconds
