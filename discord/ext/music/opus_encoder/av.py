@@ -1,6 +1,12 @@
-import av
 import io
 import struct
+
+try:
+    import av
+except ImportError:
+    AV_OK = False
+else:
+    AV_OK = True
 
 class LibAVEncoder:
     """New Opus encoder using PyAV.
@@ -20,6 +26,9 @@ class LibAVEncoder:
     _dummy = io.BytesIO()
 
     def __init__(self, rate=48000) -> None:
+        if not AV_OK:
+            raise RuntimeError('PyAV is not installed')
+
         self._opener = av.open(self._dummy, 'w', format='ogg')
         self._stream = self._opener.add_stream('libopus', rate=rate)
         self.sample_rate = rate
