@@ -13,6 +13,10 @@ try:
 except ImportError:
     EQ_OK = False
 
+__all__ = (
+    'pydubError', 'pydubEqualizer', 'pydubSubwooferEqualizer'
+)
+
 class pydubError(Exception):
     pass
 
