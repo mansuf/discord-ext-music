@@ -6,7 +6,7 @@ from ...utils.errors import IllegalSeek, LibAVError
 
 class LibAVAudioStream(io.RawIOBase):
     """A file-like class represent LibAV audio-only stream"""
-    def __init__(self, url, format, codec, rate, seek=None) -> None:
+    def __init__(self, url, format, codec, rate, seek=None, mux=True) -> None:
         self.url = url
         # Will be used later
         self.kwargs = {
@@ -21,6 +21,7 @@ class LibAVAudioStream(io.RawIOBase):
         self.durations = 0
         self.stream = None
         self.output_stream = None
+        self.mux = mux
         self.muxer = None
         self.demuxer = None
         self._lock = threading.Lock()
@@ -136,8 +137,14 @@ class LibAVAudioStream(io.RawIOBase):
                 # https://github.com/PyAV-Org/PyAV/issues/281
                 frame.pts = None
                 new_packets = self.output_stream.encode(frame)
-                self.muxer.mux(new_packets)
-                yield self._stream_buffer.read()
+                if not self.mux:
+                    data = bytearray()
+                    for packet in new_packets:
+                        data += packet
+                    yield bytes(data)
+                else:
+                    self.muxer.mux(new_packets)
+                    yield self._stream_buffer.read()
 
     def seek(self, seconds: float):
         if self.durations is None:
@@ -148,13 +155,19 @@ class LibAVAudioStream(io.RawIOBase):
             elif seconds > self.durations:
                 self.close()
             if self.stream:
-                self.stream.seek(seconds)
+                self.stream.seek(int(seconds * av.time_base), any_frame=True)
             self.pos = seconds
 
     def tell(self):
         return self.pos
 
     def read(self, n=-1):
-        data = next(self.iter_data, b'')
-        self.buffer.write(data)
-        return self.buffer.read(n)
+        while True:
+            data = next(self.iter_data, b'')
+            self.buffer.write(data)
+            if not self.is_closed() and self.buffer.length < n:
+                continue
+            # Make sure the buffer are empty, if stream already ended.
+            elif self.is_closed() and not self.buffer:
+                return b''
+            return self.buffer.read(n)
