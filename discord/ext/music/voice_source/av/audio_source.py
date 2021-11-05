@@ -35,11 +35,17 @@ class LibAVAudio(MusicSource):
 
     .. _av: https://pypi.org/project/av/
     """
-    def is_opus(self):
-        # This must return True
-        # Otherwise it will encode to opus codec and caused crash
-        # (Segmentation Fault)
-        return True
+    def get_stream_durations(self):
+        return self.stream.tell()
+
+    def seek(self, seconds: float):
+        self.stream.seek(self.stream.pos + seconds)
+    
+    def rewind(self, seconds: float):
+        self.stream.seek(self.stream.pos - seconds)
+
+    def cleanup(self):
+        return self.stream.close()
 
 # For some reason, LibAVStream.read() with libopus codec
 # did not returning data sometimes.
@@ -94,17 +100,7 @@ class LibAVOpusAudio(LibAVAudio):
     def read(self):
         return next(self._ogg_stream, b'')
 
-    def get_stream_durations(self):
-        return self.stream.tell()
 
-    def seek(self, seconds: float):
-        self.stream.seek(self.stream.pos + seconds)
-    
-    def rewind(self, seconds: float):
-        self.stream.seek(self.stream.pos - seconds)
-
-    def cleanup(self):
-        return self.stream.close()
 
 class LibAVPCMAudio(LibAVAudio):
     """Represents embedded FFmpeg-based audio source producing pcm packets.
@@ -151,15 +147,6 @@ class LibAVPCMAudio(LibAVAudio):
 
     def is_opus(self):
         return False
-
-    def get_stream_durations(self):
-        return self.stream.tell()
-
-    def seek(self, seconds: float):
-        self.stream.seek(self.stream.pos + seconds)
-    
-    def rewind(self, seconds: float):
-        self.stream.seek(self.stream.pos - seconds)
 
     def cleanup(self):
         return self.stream.close()
