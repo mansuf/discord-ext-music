@@ -1,5 +1,5 @@
 import io
-from ..legacy import MusicSource
+from ..legacy import MusicSource, RawPCMAudio
 from discord.opus import _OpusStruct
 from discord.oggparse import OggStream
 
@@ -23,52 +23,17 @@ except ImportError as e:
         pass
 
 __all__ = (
-    'LibAVAudio', 'LibAVOpusAudio', 'LibAVPCMAudio'
+    'LibAVOpusAudio', 'LibAVPCMAudio'
 )
 
-class LibAVAudio(MusicSource):
-    """Represents embedded FFmpeg-based audio source.
-    
+class LibAVOpusAudio(MusicSource):
+    """Represents embedded FFmpeg-based Opus audio source.
+
     Warning
     --------
     You must have `av`_ installed, otherwise it didn't work.
 
     .. _av: https://pypi.org/project/av/
-    """
-    def get_stream_durations(self):
-        return self.stream.tell()
-
-    def seek(self, seconds: float):
-        self.stream.seek(self.stream.pos + seconds)
-    
-    def rewind(self, seconds: float):
-        self.stream.seek(self.stream.pos - seconds)
-
-    def cleanup(self):
-        return self.stream.close()
-
-# For some reason, LibAVStream.read() with libopus codec
-# did not returning data sometimes.
-class _OpusStream(LibAVAudioStream):
-    def __init__(self, url) -> None:
-        super().__init__(
-            url,
-            'ogg',
-            'libopus',
-            48000
-        )
-    
-    def read(self, n):
-        while True:
-            data = super().read(n)
-            if self.is_closed():
-                return b''
-            elif not data:
-                continue
-            return data
-
-class LibAVOpusAudio(LibAVAudio):
-    """Represents embedded FFmpeg-based Opus audio source.
 
     Parameters
     ------------
@@ -89,21 +54,50 @@ class LibAVOpusAudio(LibAVAudio):
     """
     def __init__(self, url_or_file: str) -> None:
         self.url = url_or_file
-        self.stream = _OpusStream(url_or_file)
+
+        # Will be used later
+        self.__stream_kwargs__ = {
+            'url': url_or_file,
+            'format': 'ogg',
+            'codec': 'libopus',
+            'rate': 48000,
+            'mux': True
+        }
+
+        self.stream = LibAVAudioStream(**self.__stream_kwargs__)
         self._ogg_stream = OggStream(self.stream).iter_packets()
     
     def recreate(self):
         self.stream.close()
-        self.stream = _OpusStream(self.url)
+        self.stream = LibAVAudioStream(**self.__stream_kwargs__)
         self._ogg_stream = OggStream(self.stream).iter_packets()
+
+    def is_opus(self):
+        return True
 
     def read(self):
         return next(self._ogg_stream, b'')
 
+    def get_stream_durations(self):
+        return self.stream.tell()
 
+    def seek(self, seconds: float):
+        self.stream.seek(self.stream.pos + seconds)
+    
+    def rewind(self, seconds: float):
+        self.stream.seek(self.stream.pos - seconds)
 
-class LibAVPCMAudio(LibAVAudio):
+    def cleanup(self):
+        return self.stream.close()
+
+class LibAVPCMAudio(RawPCMAudio):
     """Represents embedded FFmpeg-based audio source producing pcm packets.
+
+    Warning
+    --------
+    You must have `av`_ installed, otherwise it didn't work.
+
+    .. _av: https://pypi.org/project/av/
 
     Parameters
     ------------
@@ -139,14 +133,14 @@ class LibAVPCMAudio(LibAVAudio):
         self.stream.close()
         self.stream = LibAVAudioStream(**self.__stream_kwargs__)
 
-    def read(self):
-        data = self.stream.read(_OpusStruct.FRAME_SIZE)
-        if len(data) != _OpusStruct.FRAME_SIZE:
-            return b''
-        return data
+    def get_stream_durations(self):
+        return self.stream.tell()
 
-    def is_opus(self):
-        return False
+    def seek(self, seconds: float):
+        self.stream.seek(self.stream.pos + seconds)
+    
+    def rewind(self, seconds: float):
+        self.stream.seek(self.stream.pos - seconds)
 
     def cleanup(self):
         return self.stream.close()
