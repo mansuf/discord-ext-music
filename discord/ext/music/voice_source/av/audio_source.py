@@ -1,5 +1,6 @@
 import io
 from ..legacy import MusicSource
+from discord.opus import _OpusStruct
 from discord.oggparse import OggStream
 
 # Try to import LibAVAudioStream
@@ -22,7 +23,7 @@ except ImportError as e:
         pass
 
 __all__ = (
-    'LibAVAudio', 'LibAVOpusAudio'
+    'LibAVAudio', 'LibAVOpusAudio', 'LibAVPCMAudio'
 )
 
 class LibAVAudio(MusicSource):
@@ -63,9 +64,6 @@ class _OpusStream(LibAVAudioStream):
 class LibAVOpusAudio(LibAVAudio):
     """Represents embedded FFmpeg-based Opus audio source.
 
-    There is no volume adjuster and equalizer for now, 
-    because some problems.
-
     Parameters
     ------------
     url_or_file: :class:`str`
@@ -95,6 +93,64 @@ class LibAVOpusAudio(LibAVAudio):
 
     def read(self):
         return next(self._ogg_stream, b'')
+
+    def get_stream_durations(self):
+        return self.stream.tell()
+
+    def seek(self, seconds: float):
+        self.stream.seek(self.stream.pos + seconds)
+    
+    def rewind(self, seconds: float):
+        self.stream.seek(self.stream.pos - seconds)
+
+    def cleanup(self):
+        return self.stream.close()
+
+class LibAVPCMAudio(LibAVAudio):
+    """Represents embedded FFmpeg-based audio source producing pcm packets.
+
+    Parameters
+    ------------
+    url_or_file: :class:`str`
+        Valid URL or file location
+    
+    Attributes
+    ------------
+    url: :class:`str`
+        Valid URL or file location
+    stream: :class:`io.RawIOBase`
+        a file-like object that returning pcm packets.
+
+    Raises
+    --------
+    :class:`LibAVError`
+        Something happened when opening connection stream url.
+    """
+    def __init__(self, url_or_file: str) -> None:
+        self.url = url_or_file
+
+        # Will be used later
+        self.__stream_kwargs__ = {
+            'url': url_or_file,
+            'format': 's16le',
+            'codec': 'pcm_s16le',
+            'rate': 48000,
+            'mux': False
+        }
+        self.stream = LibAVAudioStream(**self.__stream_kwargs__)
+    
+    def recreate(self):
+        self.stream.close()
+        self.stream = LibAVAudioStream(**self.__stream_kwargs__)
+
+    def read(self):
+        data = self.stream.read(_OpusStruct.FRAME_SIZE)
+        if len(data) != _OpusStruct.FRAME_SIZE:
+            return b''
+        return data
+
+    def is_opus(self):
+        return False
 
     def get_stream_durations(self):
         return self.stream.tell()
