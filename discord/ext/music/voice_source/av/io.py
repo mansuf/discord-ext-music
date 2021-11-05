@@ -14,6 +14,10 @@ class LibAVIO(io.RawIOBase):
         self.buf = bytearray()
         self.lock = threading.Lock()
 
+    @property
+    def length(self):
+        return len(self.buf)
+
     def read(self, n=-1):
         with self.lock:
             if n <= 0:
