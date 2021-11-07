@@ -43,10 +43,8 @@ class MiniaudioError(DiscordException):
     """
     pass
 
-class LibAVError(DiscordException):
-    """
-    Raised when something happened in LibAV stream
-    """
+class StreamHTTPError(DiscordException):
+    """Raised when something happened in audio HTTP stream"""
     pass
 
 class TrackNotExist(DiscordException):
