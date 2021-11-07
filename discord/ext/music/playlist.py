@@ -43,6 +43,11 @@ class Playlist:
         self._tracks.remove(target)
         self._reorder_id_tracks(self._tracks)
 
+    @property
+    def pos(self):
+        """Return current position of the playlist."""
+        return self._pos
+
     def add_track(self, track: Track) -> None:
         """Add a track
         
