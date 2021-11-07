@@ -5,6 +5,7 @@ import time
 import asyncio
 import traceback
 
+from discord.utils import maybe_coroutine
 from discord.player import AudioPlayer
 from .voice_source import Silence
 
@@ -109,18 +110,9 @@ class MusicPlayer(AudioPlayer):
         track = fut.result()
 
         if self.after is not None:
-            # Check if after function is coroutine or not
-            if asyncio.iscoroutinefunction(self.after):
-                fut = asyncio.run_coroutine_threadsafe(self.after(error, track), self.client.loop)
-                exc = fut.exception()
-                if exc:
-                    log.exception('Calling the after function failed.')
-                    exc.__context__ = error
-                    traceback.print_exception(type(exc), exc, exc.__traceback__)
-                return
-            try:
-                self.after(error, track)
-            except Exception as exc:
+            fut = asyncio.run_coroutine_threadsafe(maybe_coroutine(self.after, error, track), self.client.loop)
+            exc = fut.exception()
+            if exc:
                 log.exception('Calling the after function failed.')
                 exc.__context__ = error
                 traceback.print_exception(type(exc), exc, exc.__traceback__)
