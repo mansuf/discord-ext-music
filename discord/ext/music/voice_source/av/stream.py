@@ -2,10 +2,21 @@ import threading
 import av
 import io
 from .io import LibAVIO
-from ...utils.errors import IllegalSeek, LibAVError
+from ...utils.errors import IllegalSeek, StreamHTTPError
 
 class LibAVAudioStream(io.RawIOBase):
     """A file-like class represent LibAV audio-only stream"""
+
+    # Known HTTP Errors
+    # According to https://github.com/PyAV-Org/PyAV/blob/main/av/error.pyx#L162-L167
+    AV_HTTP_ERRORS = (
+        av.HTTPBadRequestError,
+        av.HTTPUnauthorizedError,
+        av.HTTPForbiddenError,
+        av.HTTPNotFoundError,
+        av.HTTPOtherClientError,
+        av.HTTPServerError
+    )
     def __init__(self, url, format, codec, rate, seek=None, mux=True) -> None:
         self.url = url
         # Will be used later
@@ -18,7 +29,7 @@ class LibAVAudioStream(io.RawIOBase):
         }
         self.buffer = LibAVIO()
         self.pos = 0
-        self.durations = 0
+        self.durations = None
         self.stream = None
         self.output_stream = None
         self.mux = mux
@@ -31,18 +42,18 @@ class LibAVAudioStream(io.RawIOBase):
         self._stream_buffer = LibAVIO()
 
         # Check connection
-        self._check_connection(url)
+        self._open_connection(url)
 
         # Iteration data LibAV
         self.iter_data = self._iter_av_packets()
 
-    def _check_connection(self, url):
+    def _open_connection(self, url):
         try:
             stream = av.open(url, 'r')
-            self.durations = stream.duration
-            stream.close()
-        except av.error.FFmpegError as e:
-            raise LibAVError(str(e)) from None
+        except self.AV_HTTP_ERRORS:
+            raise StreamHTTPError('Failed to open connection stream')
+        else:
+            return stream
 
     def reconnect(self, seek=None):
         # Speed up grab kwargs
@@ -51,7 +62,7 @@ class LibAVAudioStream(io.RawIOBase):
         codec = self.kwargs.get('codec')
         rate = self.kwargs.get('rate')
 
-        self.stream = av.open(self.url, 'r')
+        self.stream = self._open_connection(self.url)
         _seek_durations = 0
         # If seek argument is defined in __init__()
         if _seek_kwarg:
