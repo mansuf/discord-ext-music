@@ -30,7 +30,7 @@ extras_require = {
         'miniaudio'
     ],
     'pyav': [
-        'av'
+        'av==8.0.3'
     ],
     'all': [
         'pydub',
