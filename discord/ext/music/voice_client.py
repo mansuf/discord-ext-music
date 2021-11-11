@@ -31,7 +31,7 @@ class MusicClient(VoiceClient):
 
     Warning
     --------
-    It is important to add parameter `cls` with value :class:`MusicClient` to :meth:`discord.VoiceChannel.connect`,
+    It is important to add parameter ``cls`` with value :class:`MusicClient` to :meth:`discord.VoiceChannel.connect`,
     otherwise you wont get these features. For example:
 
     .. code-block:: python3
@@ -136,7 +136,6 @@ class MusicClient(VoiceClient):
                 self._play(track, self._after)
 
         return track
-
 
     def register_after_callback(self, func: Callable[[Union[Exception, None], Union[Track, None]], Any]):
         """Register a callable function (can be coroutine function)
