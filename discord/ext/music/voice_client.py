@@ -46,6 +46,8 @@ class MusicClient(VoiceClient):
     def __init__(self, client, channel):
         super().__init__(client, channel)
         self._after = None
+        self._pre_next = None
+        self._post_next = None
 
         # Will be used for _stop()
         self._done = asyncio.Event()
@@ -137,18 +139,19 @@ class MusicClient(VoiceClient):
 
         return track
 
-    def register_after_callback(self, func: Callable[[Union[Exception, None], Union[Track, None]], Any]):
-        """Register a callable function (can be coroutine function)
-        for callback after player has done playing and play the next song or error occured.
+    def before_play_next(self, func: Callable[[Union[Track, None]], Any]):
+        """A decorator that register callable function (can be coroutine function) as a pre-play next track
+        
+        This is useful for checking a streamable url or any type of set up required.
+
+        The ``func`` callable must accept 1 parameter :class:`Track` that is the next track 
+        that want to be played.
 
         Parameters
-        ------------
-        func: Callable[[Union[:class:`Exception`, None], Union[:class:`Track`, None]], Any]
-            a callable function (can be coroutine function) that accept 2 parameters: :class:`Exception`
-            and :class:`Track`.
-            That :class:`Exception` is for exception in the player (if error happened) and 
-            :class:`Track` is for the next audio track. 
-        
+        -----------
+        func: Callable[[Union[:class:`Track`, ``None``]], Any]
+            The callable function to register as pre-play next track.
+
         Raises
         --------
         TypeError
@@ -156,7 +159,30 @@ class MusicClient(VoiceClient):
         """
         if not callable(func):
             raise TypeError('Expected a callable, got %s' % type(func))
-        self._after = func
+        self._pre_next = func
+
+    def after_play_next(self, func: Callable[[Union[Exception, None], Union[Track, None]], Any]):
+        """A decorator that register callable function (can be coroutine function) as a post-play next track
+        
+        This is useful for sending announcement or any type of clean up required.
+
+        The ``func`` callable must accept 2 parameters, 
+        :class:`Exception` that is the exception from the player (if error) and 
+        :class:`Track` that is the next track that want to be played.
+
+        Parameters
+        -----------
+        func: Callable[[Union[Exception, None], Union[Track, None]], Any]
+            The callable function to register as post-play next track.
+
+        Raises
+        --------
+        TypeError
+            Not a callable function
+        """
+        if not callable(func):
+            raise TypeError('Expected a callable, got %s' % type(func))
+        self._post_next = func
 
     def add_track(self, track: Track):
         """Add a track to playlist
