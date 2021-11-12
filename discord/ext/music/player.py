@@ -1,27 +1,42 @@
 import sys
 import logging
-import threading
 import time
 import asyncio
 import traceback
 
 from discord.utils import maybe_coroutine
 from discord.player import AudioPlayer
+
 from .voice_source import Silence
 
 log = logging.getLogger(__name__)
 
 class MusicPlayer(AudioPlayer):
-    def __init__(self, track, client, *, after=None):
-        super().__init__(track.source, client, after=after)
+    def __init__(self, track, client):
+        super().__init__(track.source, client)
         self._play_silence = False
         self.track = track
         self._silence = Silence()
         self._leaving = client._leaving
         self._done = client._done
+        
+        # Client playlist
+        self.playlist = client._playlist
+
+        # Replacing thread name
+        # MusicPlayer_{ChannelID}_{Track pos}_{Track hash}
+        self.name = 'MusicPlayer_%s_%s_%s' % (
+            client.channel.id,
+            self.playlist.get_pos_from_track(track),
+            id(track)
+        )
 
         # For play the next song after done playing
         self.next_song = client._play_next_song
+
+        # pre-play and post-play next song
+        self.pre_func = client._pre_next
+        self.post_func = client._post_next
 
         # Used for self.soft_stop()
         self._soft_stop = False
@@ -94,30 +109,47 @@ class MusicPlayer(AudioPlayer):
             time.sleep(delay)
 
     def _call_after(self):
+        # get the next track
+        track = self.playlist.get_next_track()
+
         error = self._current_error
 
         # Check if MusicClient.stop() is called
         if self._done.is_set():
             if error:
-                msg = 'Exception in voice thread {}'.format(self.name)
+                msg = 'Exception in MusicPlayer thread {}'.format(self.name)
                 log.exception(msg, exc_info=error)
                 print(msg, file=sys.stderr)
                 traceback.print_exception(type(error), error, error.__traceback__)
             return
 
-        # Play the next song
-        fut = asyncio.run_coroutine_threadsafe(self.next_song(), self.client.loop)
-        track = fut.result()
-
-        if self.after is not None:
-            fut = asyncio.run_coroutine_threadsafe(maybe_coroutine(self.after, error, track), self.client.loop)
+        # Call pre-play next function
+        if self.pre_func is not None:
+            fut = asyncio.run_coroutine_threadsafe(maybe_coroutine(self.pre_func, track), self.client.loop)
             exc = fut.exception()
             if exc:
-                log.exception('Calling the after function failed.')
+                log.exception('Calling the pre-play next track function failed.')
+                exc.__context__ = error
+                traceback.print_exception(type(exc), exc, exc.__traceback__)
+
+        # Play the next song
+        fut = asyncio.run_coroutine_threadsafe(self.next_song(track), self.client.loop)
+        exc = fut.exception()
+        if exc:
+            log.exception('Calling play next track failed.')
+            exc.__context__ = error
+            traceback.print_exception(type(exc), exc, exc.__traceback__)
+
+        # Call post-play next function
+        if self.post_func is not None:
+            fut = asyncio.run_coroutine_threadsafe(maybe_coroutine(self.post_func, error, track), self.client.loop)
+            exc = fut.exception()
+            if exc:
+                log.exception('Calling the post-play next track function failed.')
                 exc.__context__ = error
                 traceback.print_exception(type(exc), exc, exc.__traceback__)
         elif error:
-            msg = 'Exception in voice thread {}'.format(self.name)
+            msg = 'Exception in MusicPlayer thread {}'.format(self.name)
             log.exception(msg, exc_info=error)
             print(msg, file=sys.stderr)
             traceback.print_exception(type(error), error, error.__traceback__)
