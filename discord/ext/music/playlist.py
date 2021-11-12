@@ -14,6 +14,7 @@ class Playlist:
         self._tracks = []
         self._lock = threading.Lock()
         self._pos = 0
+        self.__original__ = None
 
     def _reorder_id_tracks(self, tracks):
         num = 0
@@ -164,6 +165,30 @@ class Playlist:
         """
         with self._lock:
             return self.get_track_from_pos(self._pos)
+
+    def get_pos_from_track(self, track: Track) -> int:
+        """Get a position track from given track
+
+        Parameters
+        -----------
+        track: :class:`Track`
+            Track that we want to retrieve from playlist
+        
+        Raises
+        -------
+        TrackNotExist
+            Given track position is not exist
+
+        Returns
+        --------
+        :class:`Track`
+            The track position from given track
+        """
+        with self._lock:
+            t = self._get_raw_track(track)
+            if t is None:
+                raise TrackNotExist('track %s is not exist' % track) from None
+            return t['_id']
 
     def get_track_from_pos(self, pos: int) -> Track:
         """Get a track from given position
