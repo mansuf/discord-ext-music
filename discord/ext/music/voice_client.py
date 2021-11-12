@@ -45,7 +45,6 @@ class MusicClient(VoiceClient):
     """
     def __init__(self, client, channel):
         super().__init__(client, channel)
-        self._after = None
         self._pre_next = None
         self._post_next = None
 
@@ -143,7 +142,7 @@ class MusicClient(VoiceClient):
         async with self._lock:
             track = self._playlist.get_next_track()
             if track:
-                self._play(track, self._after)
+                self._play(track)
 
         return track
 
@@ -202,11 +201,11 @@ class MusicClient(VoiceClient):
         """
         self._playlist.add_track(track)
 
-    def _play(self, track, after):
+    def _play(self, track):
         if not self.encoder and not track.source.is_opus():
             self.encoder = _OpusEncoder()
 
-        self._player = MusicPlayer(track, self, after=after)
+        self._player = MusicPlayer(track, self)
         self._player.start()
 
         # we are playing
@@ -241,7 +240,7 @@ class MusicClient(VoiceClient):
                 self._playlist.add_track(track)
                 return
             self._playlist.add_track(track)
-            self._play(track, self._after)
+            self._play(track)
 
     async def play_track_from_pos(self, pos: int):
         """Play track from given pos
@@ -263,7 +262,7 @@ class MusicClient(VoiceClient):
         async with self._lock:
             self._soft_stop()
             track = self._playlist.jump_to_pos(pos)
-            self._play(track, self._after)
+            self._play(track)
 
     def _stop(self):
         if self._player:
@@ -384,7 +383,7 @@ class MusicClient(VoiceClient):
             track = self._playlist.get_next_track()
             if track is None:
                 raise NoMoreSongs('no more songs in playlist')
-            self._play(track, self._after)
+            self._play(track)
 
     async def previous_track(self):
         """Play previous track
@@ -403,7 +402,7 @@ class MusicClient(VoiceClient):
             track = self._playlist.get_previous_track()
             if track is None:
                 raise NoMoreSongs('no more songs in playlist')
-            self._play(track, self._after)
+            self._play(track)
 
     async def remove_track(self, track: Track):
         """Remove a track and stop the player (if given track same as playing track)
