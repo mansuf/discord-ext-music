@@ -133,18 +133,15 @@ class MusicClient(VoiceClient):
 
     # Playback controls
 
-    async def _play_next_song(self):
+    async def _play_next_song(self, track):
         # If disconnected then do nothing.
         if not self.is_connected():
             return
         
         # Play the next song
         async with self._lock:
-            track = self._playlist.get_next_track()
             if track:
                 self._play(track)
-
-        return track
 
     def before_play_next(self, func: Callable[[Union[Track, None]], Any]):
         """A decorator that register callable function (can be coroutine function) as a pre-play next track
