@@ -98,6 +98,7 @@ class MusicClient(VoiceClient):
                 self.socket.close()
 
     async def disconnect(self, *, force=False):
+        """Disconnects this voice client from voice."""
         if not force:
             if not self.is_connected():
                 return
@@ -107,6 +108,13 @@ class MusicClient(VoiceClient):
             await self._disconnect()
 
     async def move_to(self, channel):
+        """Moves you to a different voice channel.
+
+        Parameters
+        -----------
+        channel: :class:`abc.Snowflake`
+            The channel to move to. Must be a voice channel.
+        """
         async with self._lock:
             await super().move_to(channel)
     
