@@ -151,7 +151,8 @@ class Playlist:
         List[:class:`Track`]
             All tracks in playlist
         """
-        return [t['track'] for t in self._tracks]
+        with self._lock:
+            return [t['track'] for t in self._tracks]
 
     def get_current_track(self) -> Track:
         """Get current track in current position
@@ -161,7 +162,8 @@ class Playlist:
         :class:`Track`
             The current track in current position
         """
-        return self.get_track_from_pos(self._pos)
+        with self._lock:
+            return self.get_track_from_pos(self._pos)
 
     def get_track_from_pos(self, pos: int) -> Track:
         """Get a track from given position
@@ -181,12 +183,13 @@ class Playlist:
         :class:`Track`
             The track from given position
         """
-        try:
-            t = self._tracks[pos]
-        except IndexError:
-            raise TrackNotExist('track position %s is not exist' % pos) from None
-        else:
-            return t['track']
+        with self._lock:
+            try:
+                t = self._tracks[pos]
+            except IndexError:
+                raise TrackNotExist('track position %s is not exist' % pos) from None
+            else:
+                return t['track']
 
     def get_next_track(self) -> Union[Track, None]:
         """Get next track
