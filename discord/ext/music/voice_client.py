@@ -292,7 +292,6 @@ class MusicClient(VoiceClient):
     def _stop(self):
         if self._player:
             self._player.stop()
-            self._player.join()
             self._player = None
 
     def _soft_stop(self):

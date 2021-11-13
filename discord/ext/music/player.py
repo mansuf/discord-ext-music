@@ -53,7 +53,7 @@ class MusicPlayer(AudioPlayer):
         finally:
             if not self._soft_stop:
                 self.source.cleanup()
-            self._call_after()
+                self._call_after()
 
     def _do_run(self):
         self.loops = 0
