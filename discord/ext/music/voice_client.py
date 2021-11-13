@@ -291,12 +291,12 @@ class MusicClient(VoiceClient):
 
     def _stop(self):
         if self._player:
+            self._done.set()
             self._player.stop()
             self._player = None
 
     def _soft_stop(self):
         if self._player:
-            self._done.set()
             self._player.soft_stop()
             self._player = None
 
