@@ -75,6 +75,9 @@ class LibAVOpusAudio(MusicSource):
     def is_opus(self):
         return True
 
+    def set_volume(self, volume):
+        raise NotImplementedError
+
     def read(self):
         return next(self._ogg_stream, b'')
 
