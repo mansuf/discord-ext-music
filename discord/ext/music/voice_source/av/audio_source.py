@@ -133,7 +133,8 @@ class LibAVPCMAudio(RawPCMAudio):
             'rate': 48000,
             'mux': False
         }
-        self.stream = LibAVAudioStream(**self.__stream_kwargs__)
+        stream = LibAVAudioStream(**self.__stream_kwargs__)
+        super().__init__(stream)
     
     def recreate(self):
         self.stream.close()
