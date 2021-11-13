@@ -1,4 +1,6 @@
 [![pypi-total-downloads](https://img.shields.io/pypi/dm/discord-ext-music?label=DOWNLOADS&style=for-the-badge)](https://pypi.org/project/discord-ext-music)
+[![python-ver](https://img.shields.io/pypi/pyversions/discord-ext-music?style=for-the-badge)](https://pypi.org/project/discord-ext-music)
+[![pypi-release-ver](https://img.shields.io/pypi/v/discord-ext-music?style=for-the-badge)](https://pypi.org/project/discord-ext-music)
 
 # discord-ext-music
 
@@ -6,74 +8,72 @@ An easy-to-use music extension for [discord.py](https://github.com/Rapptz/discor
 
 ## Features
 
-- It's easy to use
-- Have all playback and playlist controls (skip, previous, seek, rewind, and etc..)
-- Thread-safe playback controls
-- Built-in equalizer and volume adjuster for PCM codec audio ([pydub](https://github.com/jiaaro/pydub) and [scipy](https://github.com/scipy/scipy) required)
-- Built-in thread-safe playlist
-- Can play most supported sources from FFmpeg libraries and it embedded into python! ([PyAV](https://github.com/PyAV-Org/PyAV) required)
+- It's easy to use and can be used for complex process.
+- Complete playback controls and thread-safe.
+- Built-in equalizer and volume adjuster.
+- The audio source can be used in [discord.py](https://github.com/Rapptz/discord.py) audio library.
 
 ## Installation
 
 **Python 3.8 or higher required.**
 
-You can install `discord-ext-music` directly from PyPI by the following command:
-```
+### Stable version
+
+You can install `discord-ext-music` stable version directly from PyPI by the following command:
+
+```bash
 pip install discord-ext-music
 ```
 
-If you want to have equalizer support do the following command:
-```
-pip install discord-ext-music[equalizer]
+or by the cloning repository with latest stable version:
+
+```bash
+git clone --branch v0.3.0 https://github.com/mansuf/discord-ext-music.git
+cd discord-ext-music
 ```
 
-If you want to have miniaudio-based audio source support do the following command:
-```
-pip install discord-ext-music[miniaudio]
-```
+### Development version
 
-If you want to have FFmpeg-based audio source support do the following command:
-```
-pip install discord-ext-music[pyav]
-```
+You also can install development version by cloning the repository, see below:
 
-If you want to have all optional dependencies do the following command:
-```
-pip install discord-ext-music[all]
-```
-
-Also, you can install development version by the following command:
-```
+```bash
 git clone https://github.com/mansuf/discord-ext-music.git
 cd discord-ext-music
-pip install -U .[all]
 ```
 
 ### Optional packages
+
+These are optional packages that you are not required to install it, but you get extra benefit
+once you install it.
+
 - [scipy](https://github.com/scipy/scipy) and [pydub](https://github.com/jiaaro/pydub)
-    (for equalizer support)
+    for equalizer support.
 - [miniaudio](https://github.com/irmen/pyminiaudio)
-    (for miniaudio-based audio source support)
+    for miniaudio music source support.
 - [PyAV](https://github.com/PyAV-Org/PyAV)
-    (for FFmpeg-based audio source support)
+    for FFmpeg libraries music source support.
 
-## Supported formats
+## What type of audio formats discord-ext-music can play ?
 
+basically, you can play these formats without additional packages:
 - Raw PCM
 - WAV
-- MP3 ([miniaudio](https://github.com/irmen/pyminiaudio) or [PyAV](https://github.com/PyAV-Org/PyAV) required)
-- FLAC ([miniaudio](https://github.com/irmen/pyminiaudio) or [PyAV](https://github.com/PyAV-Org/PyAV) required)
-- **All formats that vorbis encoded** ([miniaudio](https://github.com/irmen/pyminiaudio) or [PyAV](https://github.com/PyAV-Org/PyAV) required)
-- **All formats that FFmpeg libraries can handle** ([PyAV](https://github.com/PyAV-Org/PyAV) required)
 
-## Supported sources
+with [miniaudio](https://github.com/irmen/pyminiaudio) you can play these formats:
+- MP3
+- FLAC
+- **All formats that vorbis encoded**
+- WAV
 
-- Local file
-- **All sources that FFmpeg libraries can handle** ([PyAV](https://github.com/PyAV-Org/PyAV) required)
+with [PyAV](https://github.com/PyAV-Org/PyAV) you can almost play anything that supported by [ffmpeg](http://ffmpeg.org/) libraries
+
+## What sources that discord-ext-music can play ?
+
+Without additional packages or with [miniaudio](https://github.com/irmen/pyminiaudio) you can only play **local file**.
+
+But, with [PyAV](https://github.com/PyAV-Org/PyAV) you can almost play any sources that supported by [ffmpeg protocols](https://ffmpeg.org/ffmpeg-protocols.html)
 
 ## Quick usage
-
-**API Documentation coming soon**
 
 ```python
 from discord.ext.commands import Bot
@@ -81,7 +81,7 @@ from discord.ext.music import MusicClient, WAVAudio, Track
 
 bot = Bot()
 
-@client.command()
+@bot.command()
 async def play(ctx):
     voice_user = ctx.message.author.voice
     music_client = await voice_user.channel.connect(cls=MusicClient)
@@ -94,6 +94,11 @@ async def play(ctx):
 bot.run('token')
 ```
 
+## Links
+
+- [Documentation](http://discord-ext-music.rtfd.io/)
+- [PyPI](https://pypi.org/project/discord-ext-music)
+
 ## Example
 
-Bot example are available in directory [`example/bot.py`](https://github.com/mansuf/discord-ext-music/blob/main/example/bot.py)
+Bot example are available in [here](https://github.com/mansuf/bot-music-discordpy)
