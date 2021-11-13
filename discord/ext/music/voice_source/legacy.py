@@ -1,5 +1,6 @@
 import sys
 import threading
+from typing import Union
 import discord
 import logging
 import audioop
@@ -23,6 +24,9 @@ class MusicSource(discord.AudioSource):
     same like :class:`discord.AudioSource`, but its have
     seek, rewind, equalizer and volume built-in to AudioSource
     """
+
+    def __init__(self):
+        self.__volume__ = None
 
     def recreate(self):
         """Recreate audio source, useful for next and previous playback"""
@@ -77,18 +81,24 @@ class MusicSource(discord.AudioSource):
         """
         raise NotImplementedError()
 
-    def set_volume(self, volume: float):
+    @property
+    def volume(self):
+        """Optional[:class:`float`]: Return current volume"""
+        return self.__volume__
+
+    def set_volume(self, volume: Union[float, None]):
         """
-        Set volume in float percentage
+        Set volume in float percentage.
+        Set to ``None`` to disable volume adjust.
 
         For example, 0.5 = 50%, 1.5 = 150%
 
         Parameters
         -----------
-        volume: :class:`volume`
+        volume: :class:`float`
             Set volume to music source
         """
-        raise NotImplementedError()
+        self.__volume__ = volume
 
     def set_equalizer(self, equalizer: Equalizer=None):
         """
@@ -135,11 +145,6 @@ class RawPCMAudio(MusicSource):
         self._lock = threading.Lock()
         self._buffered_eq = None
 
-        if volume is not None:
-            self._volume = max(volume, 0.0)
-        else:
-            self._volume = None
-
     def read(self):
         with self._lock:
             # Read equalized audio data
@@ -152,10 +157,10 @@ class RawPCMAudio(MusicSource):
                 return b''
 
             # Change volume audio
-            if self._volume is None:
+            if self.volume is None:
                 return data
             else:
-                return audioop.mul(data, 2, min(self._volume, 2.0))
+                return audioop.mul(data, 2, min(self.volume, 2.0))
     
     def cleanup(self):
         self.stream.close()
@@ -172,8 +177,9 @@ class RawPCMAudio(MusicSource):
     def get_stream_durations(self):
         return self._durations
 
-    def set_volume(self, volume: float):
-        self._volume = max(volume, 0.0)
+    def set_volume(self, volume):
+        vol = max(volume, 0.0) if volume is not None else None
+        super().set_volume(vol)
 
     def set_equalizer(self, eq: Equalizer=None):
         if eq is not None:
