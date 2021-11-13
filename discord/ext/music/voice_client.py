@@ -133,6 +133,33 @@ class MusicClient(VoiceClient):
 
     # Playback controls
 
+    @property
+    def playlist(self):
+        """:class:`Playlist`: Return current playlist"""
+        return self._playlist
+    
+    async def set_playlist(self, playlist: Playlist, stop_player: bool=False):
+        """Replace current playlist with given playlist
+        
+        Parameters
+        -----------
+        playlist: :class:`Playlist`
+            A playlist that want to be setted
+        stop_player: :class:`bool`
+            Stop the player when changing playlist (if playing).
+        
+        Raises
+        -------
+        TypeError
+            "playlist" parameter is not :class:`Playlist`
+        """
+        if stop_player:
+            await self.stop()
+        if not isinstance(playlist, Playlist):
+            raise TypeError('playlist must an Playlist not {0.__class__.__name__}'.format(playlist))
+
+        self._playlist = playlist
+
     async def _play_next_song(self, track):
         # If disconnected then do nothing.
         if not self.is_connected():
