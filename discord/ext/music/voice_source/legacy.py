@@ -27,6 +27,7 @@ class MusicSource(discord.AudioSource):
 
     def __init__(self):
         self.__volume__ = None
+        self.__equalier__ = None
 
     def recreate(self):
         """Recreate audio source, useful for next and previous playback"""
@@ -100,6 +101,11 @@ class MusicSource(discord.AudioSource):
         """
         self.__volume__ = volume
 
+    @property
+    def equalizer(self):
+        """Optional[:class:`Equalizer`]: Return current equalizer"""
+        return self.__equalier__
+
     def set_equalizer(self, equalizer: Equalizer=None):
         """
         Set a :class:`Equalizer` to MusicSource.
@@ -109,7 +115,7 @@ class MusicSource(discord.AudioSource):
         equalizer: :class:`Equalizer`
             Set equalizer to music source
         """
-        raise NotImplementedError()
+        self.__equalier__ = equalizer
 
 class Silence(MusicSource):
     def read(self):
@@ -148,8 +154,8 @@ class RawPCMAudio(MusicSource):
     def read(self):
         with self._lock:
             # Read equalized audio data
-            if self._eq is not None:
-                data = self._eq.read()
+            if self.equalizer is not None:
+                data = self.equalizer.read()
             else:
                 data = self.stream.read(OpusEncoder.FRAME_SIZE)
 
@@ -187,7 +193,7 @@ class RawPCMAudio(MusicSource):
                 raise EqualizerError('{0.__class__.__name__} is not Equalizer'.format(eq))
         with self._lock:
             eq.setup(self.stream)
-            self._eq = eq
+            super().set_equalizer(eq)
 
     # -------------------------------------------
     # Formula seek and rewind for PCM-based Audio
