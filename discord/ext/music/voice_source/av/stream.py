@@ -36,6 +36,7 @@ class LibAVAudioStream(io.RawIOBase):
         self.muxer = None
         self.demuxer = None
         self._lock = threading.Lock()
+        self._closed = threading.Event()
         self._stopped = threading.Event()
 
         # Will be used in Decoder Stream
@@ -84,7 +85,10 @@ class LibAVAudioStream(io.RawIOBase):
         self.demuxer = self.stream.demux(audio=0)
         self.muxer = av.open(self._stream_buffer, 'w', format=format)
         self.output_stream = self.muxer.add_stream(codec, rate=rate)
-        
+
+    def is_closed(self):
+        return self._closed.is_set()
+
     def _close(self):
         if self.stream:
             self.stream.close()
@@ -92,10 +96,7 @@ class LibAVAudioStream(io.RawIOBase):
             self.muxer.close()
         self.output_stream = None
         self.demuxer = None
-        self._stopped.set()
-
-    def is_closed(self):
-        return self._stopped.is_set()
+        self._closed.set()
 
     def close(self):
         self._close()
