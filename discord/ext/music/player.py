@@ -109,9 +109,6 @@ class MusicPlayer(AudioPlayer):
             time.sleep(delay)
 
     def _call_after(self):
-        # get the next track
-        track = self.playlist.get_next_track()
-
         error = self._current_error
 
         # Check if MusicClient.stop() is called
@@ -122,6 +119,9 @@ class MusicPlayer(AudioPlayer):
                 print(msg, file=sys.stderr)
                 traceback.print_exception(type(error), error, error.__traceback__)
             return
+
+        # get the next track
+        track = self.playlist.get_next_track()
 
         # Call pre-play next function
         if self.pre_func is not None:
