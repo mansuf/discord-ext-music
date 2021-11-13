@@ -63,6 +63,7 @@ class LibAVAudioStream(io.RawIOBase):
         rate = self.kwargs.get('rate')
 
         self.stream = self._open_connection(self.url)
+        self.durations = self.stream.duration
         _seek_durations = 0
         # If seek argument is defined in __init__()
         if _seek_kwarg:
