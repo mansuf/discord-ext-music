@@ -77,6 +77,9 @@ class LibAVOpusAudio(MusicSource):
 
     def set_volume(self, volume):
         raise NotImplementedError
+    
+    def set_equalizer(self, equalizer):
+        raise NotImplementedError
 
     def read(self):
         return next(self._ogg_stream, b'')
