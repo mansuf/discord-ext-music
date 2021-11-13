@@ -485,6 +485,33 @@ class MusicClient(VoiceClient):
                 self._stop()
             self._playlist.remove_all_tracks()
 
+    @property
+    def volume(self):
+        """:class:`float`: Return current volume music source being played (if playing)."""
+        return self.source.volume if self.source else None
+
+    def set_volume(self, volume: float):
+        """Set volume for music source
+        
+        Parameters
+        -----------
+        volume: :class:`float`
+            Volume that want to be setted in music source
+        
+        Raises
+        -------
+        MusicNotPlaying
+            Not playing any audio
+        MusicClientException
+            current music source does not support volume adjust
+        """
+        if not self.is_playing():
+            raise MusicNotPlaying('Not playing any audio')
+        try:
+            self.source.set_volume(volume)
+        except NotImplementedError:
+            raise MusicClientException('current music source does not support volume adjust')
+
     # Track related
 
     @property
