@@ -222,7 +222,7 @@ class MusicClient(VoiceClient):
         Parameters
         -----------
         track: :class:`Track`
-            Audio Track that we're gonna play.
+            Audio Track that we're gonna add to playlist.
         """
         self._playlist.add_track(track)
 
@@ -262,9 +262,9 @@ class MusicClient(VoiceClient):
 
         async with self._lock:
             if self.is_playing():
-                self._playlist.add_track(track)
+                self.add_track(track)
                 return
-            self._playlist.add_track(track)
+            self.add_track(track)
             self._play(track)
 
     async def play_track_from_pos(self, pos: int):
