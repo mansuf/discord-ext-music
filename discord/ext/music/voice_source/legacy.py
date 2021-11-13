@@ -145,6 +145,7 @@ class RawPCMAudio(MusicSource):
         stream: BufferedIOBase,
         volume: float=0.5,
     ):
+        super().__init__()
         self.stream = stream
         self._durations = 0
         self._eq = None # type: Equalizer

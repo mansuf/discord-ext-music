@@ -53,6 +53,7 @@ class LibAVOpusAudio(MusicSource):
         Something happened when opening connection stream url.
     """
     def __init__(self, url_or_file: str) -> None:
+        super().__init__()
         self.url = url_or_file
 
         # Will be used later
