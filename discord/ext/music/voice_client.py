@@ -261,11 +261,9 @@ class MusicClient(VoiceClient):
             raise TypeError('track must an Track not {0.__class__.__name__}'.format(track))
 
         async with self._lock:
-            if self.is_playing():
-                self.add_track(track)
-                return
             self.add_track(track)
-            self._play(track)
+            if not self.is_playing():
+                self._play(track)
 
     async def play_track_from_pos(self, pos: int):
         """Play track from given pos
