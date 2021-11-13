@@ -6,6 +6,7 @@ import os
 from typing import Callable, Any, Union
 from discord.voice_client import VoiceClient
 from .opus_encoder import get_opus_encoder
+from .equalizer import Equalizer
 from .playlist import Playlist
 from .track import Track
 from .player import MusicPlayer
@@ -485,9 +486,38 @@ class MusicClient(VoiceClient):
                 self._stop()
             self._playlist.remove_all_tracks()
 
+    # Track related
+
+    @property
+    def equalizer(self):
+        """Optional[:class:`Equalizer`]: Return current equalizer music source being played (if playing)."""
+        return self.source.equalizer if self.source else None
+
+    def set_equalizer(self, equalizer: Equalizer):
+        """Set equalizer for music source
+
+        Parameters
+        -----------
+        equalier: :class:`Equalizer`
+            Equalizer that want to be setted in music source
+
+        Raises
+        -------
+        MusicNotPlaying
+            Not playing any audio
+        MusicClientException
+            current music source does not support equalizer
+        """
+        if not self.is_playing():
+            raise MusicNotPlaying('Not playing any audio')
+        try:
+            self.source.set_equalizer(equalizer)
+        except NotImplementedError:
+            raise MusicClientException('current music source does not support equalizer')
+
     @property
     def volume(self):
-        """:class:`float`: Return current volume music source being played (if playing)."""
+        """Optional[:class:`float`]: Return current volume music source being played (if playing)."""
         return self.source.volume if self.source else None
 
     def set_volume(self, volume: float):
@@ -511,8 +541,6 @@ class MusicClient(VoiceClient):
             self.source.set_volume(volume)
         except NotImplementedError:
             raise MusicClientException('current music source does not support volume adjust')
-
-    # Track related
 
     @property
     def source(self):
