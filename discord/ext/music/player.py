@@ -177,9 +177,6 @@ class MusicPlayer(AudioPlayer):
         # Stop the player
         self.stop()
 
-        # Wait until it terminates
-        self.join()
-        
         # Start from zero
         self.source.recreate()
         
