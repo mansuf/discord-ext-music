@@ -43,7 +43,8 @@ class LibAVAudioStream(io.RawIOBase):
         self._stream_buffer = LibAVIO()
 
         # Check connection
-        self._open_connection(url)
+        stream = self._open_connection(url)
+        stream.close()
 
         # Iteration data LibAV
         self.iter_data = self._iter_av_packets()
