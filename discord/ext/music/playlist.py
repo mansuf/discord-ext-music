@@ -41,6 +41,8 @@ class Playlist:
         target = self._get_raw_track(track)
         if target is None:
             raise TrackNotExist('track is not exist')
+        # Cleanup audio source
+        target['track'].source.cleanup()
         self._tracks.remove(target)
         self._reorder_id_tracks(self._tracks)
 
