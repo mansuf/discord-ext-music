@@ -11,6 +11,7 @@ An easy-to-use music extension for [discord.py](https://github.com/Rapptz/discor
 - It's easy to use and can be used for complex process.
 - Complete playback controls and thread-safe.
 - The audio source can be used in [discord.py](https://github.com/Rapptz/discord.py) audio library.
+    - **NOTE**: The audio sources from [discord.py](https://github.com/Rapptz/discord.py) cannot be played in [discord-ext-music](https://github.com/mansuf/discord-ext-music) library, see [Reusable audio sources](#reusable-audio-sources)
 
 ## Installation
 
@@ -98,6 +99,14 @@ async def play(ctx):
 
 bot.run('token')
 ```
+
+## Notes
+
+### Reusable audio sources
+
+Because discord-ext-music is specialized for music, all audio sources in discord-ext-music are reusable. 
+So if you call `MusicClient.stop()`, `MusicClient.next_track()`, `MusicClient.previous_track()`, or `MusicClient.play_track_from_pos()`
+the audio source will be recreated with same configurations (**NOTE:** Some audio sources are not reusable, for example: if you pass unseekable stream to `RawPCMAudio` or `WAVAudio` it will become non-reusable). And if the audio ended, the audio sources will not cleaned up, it will stay there until you removed it from playlist or reused by the library. Meanwhile, all audio sources in [discord.py](https://github.com/Rapptz/discord.py) library are not reusable and cannot be played in [`MusicClient`](https://github.com/mansuf/discord-ext-music/blob/main/discord/ext/music/voice_client.py#L26). But, the audio sources in discord-ext-music can be played in [`VoiceClient`](https://github.com/Rapptz/discord.py/blob/v1.7.3/discord/voice_client.py#L171).
 
 ## Links
 
