@@ -283,7 +283,7 @@ class MusicClient(VoiceClient):
         if not self.is_connected():
             raise NotConnected('Not connected to voice.')
         async with self._lock:
-            self._soft_stop()
+            self._stop()
             track = self._playlist.jump_to_pos(pos)
             self._play(track)
 
