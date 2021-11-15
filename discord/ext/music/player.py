@@ -38,9 +38,6 @@ class MusicPlayer(AudioPlayer):
         self.pre_func = client._pre_next
         self.post_func = client._post_next
 
-        # Used for self.soft_stop()
-        self._soft_stop = False
-
         # For set_source()
         self._lock = client._lock
 
@@ -51,9 +48,7 @@ class MusicPlayer(AudioPlayer):
             self._current_error = exc
             self.stop()
         finally:
-            if not self._soft_stop:
-                self.source.cleanup()
-                self._call_after()
+            self._call_after()
 
     def _do_run(self):
         self.loops = 0
@@ -162,22 +157,8 @@ class MusicPlayer(AudioPlayer):
         self._play_silence = False
         super().resume(update_speaking=update_speaking)
 
-    def soft_stop(self):
-        """Stop the player but not the ``MusicSource``
-
-        `MusicSource` will be restarted from zero using `recreate()` method
-        
-        This will be used in:
-        - `MusicClient.play_track_from_pos()`
-        - `MusicClient.next_track()`
-        - `MusicClient.previous_track()`
-        """
-        self._soft_stop = True
-
-        # Stop the player
-        self.stop()
-
-        # Start from zero
+    def stop(self):
+        super().stop()
         self.source.recreate()
         
     def _set_source(self, source):

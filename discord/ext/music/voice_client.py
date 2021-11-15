@@ -293,11 +293,6 @@ class MusicClient(VoiceClient):
             self._player.stop()
             self._player = None
 
-    def _soft_stop(self):
-        if self._player:
-            self._player.soft_stop()
-            self._player = None
-
     async def stop(self):
         """Stop playing audio
         
@@ -401,7 +396,7 @@ class MusicClient(VoiceClient):
         if not self.is_connected():
             raise NotConnected('Not connected to voice.')
         async with self._lock:
-            self._soft_stop()
+            self._stop()
             track = self._playlist.get_next_track()
             if track is None:
                 raise NoMoreSongs('no more songs in playlist')
@@ -420,7 +415,7 @@ class MusicClient(VoiceClient):
         if not self.is_connected():
             raise NotConnected('Not connected to voice.')
         async with self._lock:
-            self._soft_stop()
+            self._stop()
             track = self._playlist.get_previous_track()
             if track is None:
                 raise NoMoreSongs('no more songs in playlist')
