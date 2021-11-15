@@ -6,11 +6,10 @@
 
 An easy-to-use music extension for [discord.py](https://github.com/Rapptz/discord.py)
 
-## Features
+## Key features
 
 - It's easy to use and can be used for complex process.
 - Complete playback controls and thread-safe.
-- Built-in equalizer and volume adjuster.
 - The audio source can be used in [discord.py](https://github.com/Rapptz/discord.py) audio library.
 
 ## Installation
@@ -53,19 +52,25 @@ once you install it.
 - [PyAV](https://github.com/PyAV-Org/PyAV)
     for FFmpeg libraries music source support.
 
+You can install all additional packages in one command:
+
+```bash
+pip install discord-ext-music[all]
+```
+
 ## What type of audio formats discord-ext-music can play ?
 
 basically, you can play these formats without additional packages:
 - Raw PCM
 - WAV
 
-with [miniaudio](https://github.com/irmen/pyminiaudio) you can play these formats:
+with [miniaudio](https://github.com/irmen/pyminiaudio), you can play these formats:
 - MP3
 - FLAC
 - **All formats that vorbis encoded**
 - WAV
 
-with [PyAV](https://github.com/PyAV-Org/PyAV) you can almost play anything that supported by [ffmpeg](http://ffmpeg.org/) libraries
+with [PyAV](https://github.com/PyAV-Org/PyAV), you can almost play anything that supported by [ffmpeg](http://ffmpeg.org/) libraries
 
 ## What sources that discord-ext-music can play ?
 
