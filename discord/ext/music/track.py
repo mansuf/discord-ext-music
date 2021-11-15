@@ -3,7 +3,7 @@ from .voice_source import MusicSource
 __all__ = ('Track',)
 
 class Track:
-    """A audio track containing audio source, name, url, stream_url, thumbnail
+    """A audio track containing audio source, name, url, thumbnail
     
     Parameters
     -----------
@@ -13,8 +13,6 @@ class Track:
         Name of this track
     url: :class:`str`
         Webpage url of this track
-    stream_url: :class:`str`
-        Streamable url of this track
     thumbnail: :class:`str`
         Valid thumbnail url of this track
     
@@ -26,8 +24,6 @@ class Track:
         Name of this track
     url: :class:`str`
         Webpage url of this track
-    stream_url: :class:`str`
-        Streamable url of this track
     thumbnail: :class:`str`
         Valid thumbnail url of this track
     """
@@ -42,7 +38,6 @@ class Track:
     ) -> None:
         self.name = name
         self.url = url
-        self.stream_url = stream_url
         self.source = source
         self.thumbnail = thumbnail
 
