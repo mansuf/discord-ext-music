@@ -285,16 +285,20 @@ class WAVAudio(RawPCMAudio):
     """
     Represents WAV audio stream
 
-    stream: :class:`io.BufferedIOBase`
-        file-like object
+    file: Union[:class:`str`, :class:`io.BufferedIOBase`]
+        valid file location or file-like object.
     volume: :class:`float` or :class:`NoneType` (Optional, default: `0.5`)
         Set initial volume for AudioSource
     kwargs:
         These parameters will be passed in :class:`RawPCMAudio`
 
     """
-    def __init__(self, stream: io.IOBase, volume: float=0.5, **kwargs):
+    def __init__(self, file: Union[str, io.BufferedIOBase], volume: float=0.5, **kwargs):
         # Check if this stream is wav format
+        if isinstance(file, str):
+            stream = open(file, 'rb')
+        else:
+            stream = file
         new_stream = self._check_wav(stream)
         super().__init__(new_stream, volume, **kwargs)
 
@@ -307,26 +311,27 @@ class WAVAudio(RawPCMAudio):
     def _check_wav(self, stream):
         converted = io.BytesIO()
         info = wave.open(stream, 'rb')
-        output = wave.open(converted, 'wb')
 
         # If one of wav specifications (16-bit 48KHz) 
         # doesn't meet then convert it
         if False in self._check_wav_spec(info):
+            output = wave.open(converted, 'wb')
             output.setnchannels(2)
             output.setsampwidth(2)
             output.setframerate(48000)
         else:
-            output.close()
+            output = None
             info.close()
             return stream
 
         # Read the old stream and write it to new stream
         data = stream.read()
-        output.writeframesraw(data)
+        if output:
+            output.writeframesraw(data)
+            output.close()
 
         # Close the wave file
         info.close()
-        output.close()
 
         # Jump to 0 pos
         converted.seek(0, 0)
