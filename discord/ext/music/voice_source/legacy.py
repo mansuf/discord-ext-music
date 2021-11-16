@@ -29,6 +29,26 @@ class MusicSource(discord.AudioSource):
         self.__volume__ = None
         self.__equalier__ = None
 
+    def read(self):
+        """Reads 20ms worth of audio.
+
+        Subclasses must implement this.
+
+        If the audio is complete, then returning an empty
+        :class:`bytes` to signal this is the way to do so.
+
+        If :meth:`is_opus` method returns ``True``, then it must return
+        20ms worth of Opus encoded audio. Otherwise, it must be 20ms
+        worth of 16-bit 48KHz stereo PCM, which is about 3,840 bytes
+        per frame (20ms worth of audio).
+
+        Returns
+        --------
+        :class:`bytes`
+            A bytes like object that represents the PCM or Opus data.
+        """
+        raise NotImplementedError
+
     def recreate(self):
         """Recreate audio source, useful for next and previous playback"""
         raise NotImplementedError
@@ -137,7 +157,7 @@ class RawPCMAudio(MusicSource):
 
     Attributes
     -----------
-    stream: :term:`py:file object`
+    stream: :class:`io.BufferedIOBase`
         A file-like object that reads byte data representing raw PCM.
     """
     def __init__(
@@ -287,7 +307,7 @@ class WAVAudio(RawPCMAudio):
 
     file: Union[:class:`str`, :class:`io.BufferedIOBase`]
         valid file location or file-like object.
-    volume: :class:`float` or :class:`NoneType` (Optional, default: `0.5`)
+    volume: :class:`float` or :class:`NoneType`
         Set initial volume for AudioSource
     kwargs:
         These parameters will be passed in :class:`RawPCMAudio`
