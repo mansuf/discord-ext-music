@@ -100,6 +100,36 @@ async def play(ctx):
 bot.run('token')
 ```
 
+## Opus encoder
+
+When you're installing discord-ext-music, opus encoder already shipped with it (because of [discord.py]() audio library). This is called native opus encoder good for compatibility and stability. But, if you want to have much better performance and low CPU usage you can use alternative opus encoder using [PyAV](https://github.com/PyAV-Org/PyAV) library (by installing av package `pip install av`).
+
+By default, discord-ext-music auto detect opus encoder. If you have [PyAV](https://github.com/PyAV-Org/PyAV) installed, it will use [PyAV](https://github.com/PyAV-Org/PyAV) opus encoder, otherwise it will use native encoder.
+
+Alternatively, you can set environment to override opus encoder.
+
+For windows:
+
+```bash
+
+# PyAV opus encoder
+set OPUS_ENCODER=av
+
+# Native opus encoder
+set OPUS_ENCODER=native
+```
+
+For linux / Mac OS:
+
+```bash
+
+# PyAV opus encoder
+export OPUS_ENCODER=av
+
+# Native opus encoder
+export OPUS_ENCODER=native
+```
+
 ## Notes
 
 ### Reusable audio sources
