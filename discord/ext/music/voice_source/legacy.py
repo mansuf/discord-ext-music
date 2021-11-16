@@ -152,7 +152,7 @@ class RawPCMAudio(MusicSource):
     ------------
     stream: :class:`io.BufferedIOBase`
         file-like object
-    volume: :class:`float` or :class:`NoneType` (Optional, default: `0.5`)
+    volume: :class:`float` or :class:`NoneType`
         Set initial volume for AudioSource
 
     Attributes
@@ -163,7 +163,7 @@ class RawPCMAudio(MusicSource):
     def __init__(
         self,
         stream: BufferedIOBase,
-        volume: float=0.5,
+        volume: float=None,
     ):
         super().__init__()
         self.stream = stream
@@ -171,6 +171,7 @@ class RawPCMAudio(MusicSource):
         self._eq = None # type: Equalizer
         self._lock = threading.Lock()
         self._buffered_eq = None
+        self.set_volume(volume)
 
     def read(self):
         with self._lock:
@@ -313,7 +314,7 @@ class WAVAudio(RawPCMAudio):
         These parameters will be passed in :class:`RawPCMAudio`
 
     """
-    def __init__(self, file: Union[str, io.BufferedIOBase], volume: float=0.5, **kwargs):
+    def __init__(self, file: Union[str, io.BufferedIOBase], volume: float=None, **kwargs):
         # Check if this stream is wav format
         if isinstance(file, str):
             stream = open(file, 'rb')
