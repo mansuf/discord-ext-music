@@ -74,8 +74,8 @@ class MusicClient(VoiceClient):
 
         Parameters
         -----------
-        func: Callable[[], Any]
-            a callable function
+        func
+            a callable function (must be a coroutine function)
         
         Raises
         -------
@@ -138,7 +138,7 @@ class MusicClient(VoiceClient):
 
         Parameters
         -----------
-        channel: :class:`abc.Snowflake`
+        channel: :class:`discord.VoiceChannel`
             The channel to move to. Must be a voice channel.
         """
         async with self._lock:
@@ -235,7 +235,7 @@ class MusicClient(VoiceClient):
 
         Parameters
         -----------
-        func: Callable[[Union[Exception, None], Union[Track, None]], Any]
+        func: Callable[[Union[:class:`Exception`, ``None``], Union[:class:`Track`, ``None``]], Any]
             The callable function to register as post-play next track.
 
         Raises
@@ -356,7 +356,7 @@ class MusicClient(VoiceClient):
 
         Parameters
         -----------
-        play_silence: :class:`bool` (default: `True`)
+        play_silence: :class:`bool`
             if `True` play silence audio.
 
         Raises
