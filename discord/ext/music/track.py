@@ -32,7 +32,6 @@ class Track:
         source: MusicSource,
         name: str,
         url: str=None,
-        stream_url: str=None,
         thumbnail: str=None,
         **kwargs
     ) -> None:
