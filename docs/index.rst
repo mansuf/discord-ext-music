@@ -39,13 +39,6 @@ Quick Usage
 
     bot.run('token')
 
-Bot Example
-------------
-
-bot example are available in here_.
-
-.. _here: https://github.com/mansuf/discord-ext-music/blob/main/example/bot.py
-
 Links
 ------
 
