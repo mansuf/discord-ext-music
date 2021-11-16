@@ -64,7 +64,7 @@ class MusicClient(VoiceClient):
         # Will be used for music controls
         self._lock = asyncio.Lock()
 
-    async def on_disconnect(self, func: Callable[[], Any]):
+    def on_disconnect(self, func: Callable[[], Any]):
         """A decorator that register a callable function as hook when disconnected
 
         Note
