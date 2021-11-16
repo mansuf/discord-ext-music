@@ -8,7 +8,7 @@ Music extension module for discord.py (https://github.com/Rapptz/discord.py)
 :license: MIT, see LICENSE for more details.
 """
 
-__version__ = '0.2.0'
+__version__ = '0.3.0'
 
 from .voice_client import *
 from .track import *
