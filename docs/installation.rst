@@ -55,7 +55,7 @@ pyminiaudio
 You can do the following command:
 
 .. note::
-    On windows, you may need to install Visual Studio with C++ extension (or Visual studio build tools) before installing pyminiaudio_.
+    On windows, you may need to install Visual Studio with C++ extension (or Visual studio build tools) before installing miniaudio_.
 
 
 .. code-block:: bash
