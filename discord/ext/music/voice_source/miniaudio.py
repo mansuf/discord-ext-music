@@ -65,7 +65,7 @@ class MP3toPCMAudio(Miniaudio):
 
     Attributes
     -----------
-    stream: :term:`py:file object`
+    stream: :class:`io.BufferedIOBase`
         A file-like object that reads byte data representing raw PCM.
 
     Raises
@@ -154,7 +154,7 @@ class FLACtoPCMAudio(Miniaudio):
 
     Attributes
     -----------
-    stream: :term:`py:file object`
+    stream: :class:`io.BufferedIOBase`
         A file-like object that reads byte data representing raw PCM.
 
     Raises
@@ -243,7 +243,7 @@ class VorbistoPCMAudio(Miniaudio):
 
     Attributes
     -----------
-    stream: :term:`py:file object`
+    stream: :class:`io.BufferedIOBase`
         A file-like object that reads byte data representing raw PCM.
 
     Raises
@@ -332,7 +332,7 @@ class WAVtoPCMAudio(Miniaudio):
 
     Attributes
     -----------
-    stream: :term:`py:file object`
+    stream: :class:`io.BufferedIOBase`
         A file-like object that reads byte data representing raw PCM.
 
     Raises
