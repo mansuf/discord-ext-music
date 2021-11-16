@@ -88,6 +88,9 @@ class LibAVOpusAudio(MusicSource):
     def get_stream_durations(self):
         return self.stream.tell()
 
+    def seekable(self):
+        return True
+
     def seek(self, seconds: float):
         self.stream.seek(self.stream.pos + seconds)
     
