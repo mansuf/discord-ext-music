@@ -149,7 +149,7 @@ class MusicClient(VoiceClient):
         playlist: :class:`Playlist`
             A playlist that want to be setted
         stop_player: :class:`bool`
-            Stop the player when changing playlist (if playing).
+            Stop the player when changing playlist (if playing) and play current track from new playlist.
         
         Raises
         -------
@@ -157,11 +157,16 @@ class MusicClient(VoiceClient):
             "playlist" parameter is not :class:`Playlist`
         """
         if stop_player:
-            await self.stop()
+            try:
+                await self.stop()
+            except MusicNotPlaying:
+                pass
         if not isinstance(playlist, Playlist):
             raise TypeError('playlist must an Playlist not {0.__class__.__name__}'.format(playlist))
 
         self._playlist = playlist
+        async with self._lock:
+            self._play(playlist.get_current_track())
 
     async def _play_next_song(self, track):
         # If disconnected then do nothing.
