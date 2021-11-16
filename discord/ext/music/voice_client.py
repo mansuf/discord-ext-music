@@ -98,7 +98,8 @@ class MusicClient(VoiceClient):
                 # We're being disconnected so cleanup
                 self._leaving.set()
                 await self.disconnect()
-                await self._on_disconnect()
+                if self._on_disconnect is not None:
+                    await self._on_disconnect()
             else:
                 guild = self.guild
                 self.channel = channel_id and guild and guild.get_channel(int(channel_id))
