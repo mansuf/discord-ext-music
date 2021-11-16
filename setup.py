@@ -29,7 +29,7 @@ extras_require = {
     'miniaudio': [
         'miniaudio'
     ],
-    'pyav': [
+    'av': [
         'av==8.0.3'
     ],
     'all': [
@@ -68,7 +68,7 @@ setup(
   extras_require=extras_require,
   include_package_data=True,
   classifiers=[
-    'Development Status :: 4 - Beta',
+    'Development Status :: 5 - Production/Stable',
     'Intended Audience :: Developers',
     'License :: OSI Approved :: MIT License',  
     'Programming Language :: Python :: 3.8',
