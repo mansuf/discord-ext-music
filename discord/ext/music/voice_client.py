@@ -50,6 +50,7 @@ class MusicClient(VoiceClient):
         self._post_next = None
         self._eq = None
         self._volume = None
+        self._on_disconnect = None
 
         # Will be used for _stop()
         self._done = asyncio.Event()
@@ -63,6 +64,28 @@ class MusicClient(VoiceClient):
         # Will be used for music controls
         self._lock = asyncio.Lock()
 
+    async def on_disconnect(self, func: Callable[[], Any]):
+        """A decorator that register a callable function as hook when disconnected
+
+        Note
+        -----
+        The function must be coroutine / async, otherwise it will raise error.
+        The function must be not take any parameters.
+
+        Parameters
+        -----------
+        func: Callable[[], Any]
+            a callable function
+        
+        Raises
+        -------
+        TypeError
+            The function is not coroutine or async
+        """
+        if not asyncio.iscoroutinefunction(func):
+            raise TypeError('The function is not coroutine or async')
+        self._on_disconnect = func
+
     async def on_voice_state_update(self, data):
         self.session_id = data['session_id']
         channel_id = data['channel_id']
@@ -75,6 +98,7 @@ class MusicClient(VoiceClient):
                 # We're being disconnected so cleanup
                 self._leaving.set()
                 await self.disconnect()
+                await self._on_disconnect()
             else:
                 guild = self.guild
                 self.channel = channel_id and guild and guild.get_channel(int(channel_id))
