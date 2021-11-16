@@ -48,7 +48,8 @@ class MusicPlayer(AudioPlayer):
             self._current_error = exc
             self.stop()
         finally:
-            self._call_after()
+            if not self._leaving.is_set() and self._connected.is_set():
+                self._call_after()
 
     def _do_run(self):
         self.loops = 0
