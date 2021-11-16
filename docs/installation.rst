@@ -23,13 +23,13 @@ You can install discord-ext-music via PyPI:
 Optional Dependencies
 -----------------------
 
-- PyAV_ for embedded FFmpeg libraries music sources
-- pyminiaudio_ for Miniaudio-based music sources
+- av_ for embedded FFmpeg libraries music sources
+- miniaudio_ for Miniaudio-based music sources
 - scipy_ for equalizer
 - pydub_ for equalizer
 
-.. _PyAV: https://pypi.org/project/av/
-.. _pyminiaudio: https://pypi.org/project/miniaudio/
+.. _av: https://pypi.org/project/av/
+.. _miniaudio: https://pypi.org/project/miniaudio/
 .. _scipy: https://pypi.org/project/scipy/
 .. _pydub: https://pypi.org/project/pydub/
 

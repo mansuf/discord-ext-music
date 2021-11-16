@@ -10,9 +10,8 @@ MusicClient
 ~~~~~~~~~~~~
 
 .. autoclass:: MusicClient
-    :members:   add_track, disconnect, get_stream_durations, move_to, next_track, previous_track,
-                pause, play, play_track_from_pos, reconnect, register_after_callback, remove_all_tracks,
-                remove_track, remove_track_from_pos, resume, rewind, seek, source, stop, track
+    :members:
+    :exclude-members: connect, on_voice_state_update
 
 Tracks
 ------
@@ -38,10 +37,13 @@ Equalizers
 .. autoclass:: Equalizer
     :members:
 
-.. autoclass:: PCMEqualizer
+pydub Equalizer
+~~~~~~~~~~~~~~~~
+
+.. autoclass:: pydubEqualizer
     :members:
 
-.. autoclass:: SubwooferPCMEqualizer
+.. autoclass:: pydubSubwooferEqualizer
     :members:
 
 Music sources
@@ -80,10 +82,10 @@ Miniaudio music sources
 PyAV / Embedded FFmpeg libraries music sources
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. autoclass:: LibAVAudio
+.. autoclass:: LibAVOpusAudio
     :members:
 
-.. autoclass:: LibAVOpusAudio
+.. autoclass:: LibAVPCMAudio
     :members:
 
 Exceptions
@@ -103,7 +105,7 @@ Exceptions
 
 .. autoexception:: MiniaudioError
 
-.. autoexception:: LibAVError
+.. autoexception:: StreamHTTPError
 
 .. autoexception:: TrackNotExist
 

@@ -11,11 +11,9 @@ An easy to use music extension for discord.py_
 Features:
 ----------
 
-- It's easy to use
-- Have all playback and playlist controls
-- Thread-safe playback controls
-- Built-in equalizer and volume adjuster for PCM codec audio 
-- Can play most supported sources from FFmpeg libraries and it embedded into python! 
+- It's easy to use and can be used for complex process.
+- Complete playback controls and thread-safe.
+- The audio source can be used in discord.py_ audio library.
 
 .. _discord.py: https://github.com/Rapptz/discord.py
 
@@ -29,7 +27,7 @@ Quick Usage
 
     bot = Bot()
 
-    @client.command()
+    @bot.command()
     async def play(ctx):
         voice_user = ctx.message.author.voice
         music_client = await voice_user.channel.connect(cls=MusicClient)
@@ -65,9 +63,3 @@ Links
    changelog
    Github repository <https://github.com/mansuf/discord-ext-music>
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
