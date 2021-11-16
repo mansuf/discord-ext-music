@@ -51,6 +51,7 @@ class MusicClient(VoiceClient):
         self._eq = None
         self._volume = None
         self._on_disconnect = None
+        self._on_error = None
 
         # Will be used for _stop()
         self._done = asyncio.Event()
@@ -85,6 +86,23 @@ class MusicClient(VoiceClient):
         if not asyncio.iscoroutinefunction(func):
             raise TypeError('The function is not coroutine or async')
         self._on_disconnect = func
+
+    def on_player_error(self, func: Callable[[Exception], Any]):
+        """A decorator that register a callable function as hook when player encountered error.
+
+        The function can be normal function or coroutine (async) function.
+
+        Parameters
+        -----------
+        func: Callable[[:class:`Exception`], Any]
+            a callable function (can be a coroutine function)
+        
+        Raises
+        -------
+        TypeError
+            The function is not coroutine or async
+        """
+        self._on_error = func
 
     async def on_voice_state_update(self, data):
         self.session_id = data['session_id']
@@ -225,18 +243,17 @@ class MusicClient(VoiceClient):
             raise TypeError('Expected a callable, got %s' % type(func))
         self._pre_next = func
 
-    def after_play_next(self, func: Callable[[Union[Exception, None], Union[Track, None]], Any]):
+    def after_play_next(self, func: Callable[[Union[Track, None]], Any]):
         """A decorator that register callable function (can be coroutine function) as a post-play next track
         
         This is useful for sending announcement or any type of clean up required.
 
-        The ``func`` callable must accept 2 parameters, 
-        :class:`Exception` that is the exception from the player (if error) and 
-        :class:`Track` that is the next track that want to be played.
+        The ``func`` callable must accept 1 parameter :class:`Track` that is the next track 
+        that want to be played.
 
         Parameters
         -----------
-        func: Callable[[Union[:class:`Exception`, ``None``], Union[:class:`Track`, ``None``]], Any]
+        func: Callable[[Union[:class:`Track`, ``None``]], Any]
             The callable function to register as post-play next track.
 
         Raises

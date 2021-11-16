@@ -19,6 +19,7 @@ class MusicPlayer(AudioPlayer):
         self._silence = Silence()
         self._leaving = client._leaving
         self._done = client._done
+        self._error = client._on_error
         
         # Client playlist
         self.playlist = client._playlist
@@ -104,16 +105,26 @@ class MusicPlayer(AudioPlayer):
             delay = max(0, self.DELAY + (next_time - time.perf_counter()))
             time.sleep(delay)
 
-    def _call_after(self):
+    def _handle_error(self):
         error = self._current_error
 
+        if self._error:
+            fut = asyncio.run_coroutine_threadsafe(maybe_coroutine(self._error, error), self.client.loop)
+            exc = fut.exception()
+            if exc:
+                log.exception('Calling on player error function failed.')
+                exc.__context__ = error
+                traceback.print_exception(type(exc), exc, exc.__traceback__)
+        elif error:
+            msg = 'Exception in MusicPlayer thread {}'.format(self.name)
+            log.exception(msg, exc_info=error)
+            print(msg, file=sys.stderr)
+            traceback.print_exception(type(error), error, error.__traceback__)
+
+    def _call_after(self):
         # Check if MusicClient.stop() is called
         if self._done.is_set():
-            if error:
-                msg = 'Exception in MusicPlayer thread {}'.format(self.name)
-                log.exception(msg, exc_info=error)
-                print(msg, file=sys.stderr)
-                traceback.print_exception(type(error), error, error.__traceback__)
+            self._handle_error()
             return
 
         # get the next track
@@ -125,7 +136,7 @@ class MusicPlayer(AudioPlayer):
             exc = fut.exception()
             if exc:
                 log.exception('Calling the pre-play next track function failed.')
-                exc.__context__ = error
+                exc.__context__ = exc
                 traceback.print_exception(type(exc), exc, exc.__traceback__)
 
         # Play the next song
@@ -133,22 +144,19 @@ class MusicPlayer(AudioPlayer):
         exc = fut.exception()
         if exc:
             log.exception('Calling play next track failed.')
-            exc.__context__ = error
+            exc.__context__ = exc
             traceback.print_exception(type(exc), exc, exc.__traceback__)
 
         # Call post-play next function
         if self.post_func is not None:
-            fut = asyncio.run_coroutine_threadsafe(maybe_coroutine(self.post_func, error, track), self.client.loop)
+            fut = asyncio.run_coroutine_threadsafe(maybe_coroutine(self.post_func, track), self.client.loop)
             exc = fut.exception()
             if exc:
                 log.exception('Calling the post-play next track function failed.')
-                exc.__context__ = error
+                exc.__context__ = exc
                 traceback.print_exception(type(exc), exc, exc.__traceback__)
-        elif error:
-            msg = 'Exception in MusicPlayer thread {}'.format(self.name)
-            log.exception(msg, exc_info=error)
-            print(msg, file=sys.stderr)
-            traceback.print_exception(type(error), error, error.__traceback__)
+
+        self._handle_error()
 
     def pause(self, *, update_speaking=True, play_silence=True):
         self._play_silence = play_silence
