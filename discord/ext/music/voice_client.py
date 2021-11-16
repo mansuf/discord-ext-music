@@ -48,6 +48,8 @@ class MusicClient(VoiceClient):
         super().__init__(client, channel)
         self._pre_next = None
         self._post_next = None
+        self._eq = None
+        self._volume = None
 
         # Will be used for _stop()
         self._done = asyncio.Event()
@@ -229,6 +231,20 @@ class MusicClient(VoiceClient):
     def _play(self, track):
         if not self.encoder and not track.source.is_opus():
             self.encoder = _OpusEncoder()
+
+        # Apply equalizer
+        if self._eq:
+            try:
+                track.source.set_equalizer(self._eq)
+            except NotImplementedError:
+                pass
+        
+        # Apply volume
+        if self._volume:
+            try:
+                track.source.set_volume(self._volume)
+            except NotImplementedError:
+                pass
 
         self._player = MusicPlayer(track, self)
         self._player.start()
@@ -488,6 +504,11 @@ class MusicClient(VoiceClient):
     def set_equalizer(self, equalizer: Equalizer):
         """Set equalizer for music source
 
+        Note
+        -----
+        This will apply equalizer to all music sources to this playlist.
+        music sources that don't support equalizer or volume adjust will be ignored.
+
         Parameters
         -----------
         equalier: :class:`Equalizer`
@@ -502,10 +523,12 @@ class MusicClient(VoiceClient):
         """
         if not self.is_playing():
             raise MusicNotPlaying('Not playing any audio')
-        try:
-            self.source.set_equalizer(equalizer)
-        except NotImplementedError:
-            raise MusicClientException('current music source does not support equalizer')
+        if self.is_playing():
+            try:
+                self.source.set_equalizer(equalizer)
+            except NotImplementedError:
+                pass
+        self._eq = equalizer
 
     @property
     def volume(self):
@@ -513,7 +536,12 @@ class MusicClient(VoiceClient):
         return self.source.volume if self.source else None
 
     def set_volume(self, volume: float):
-        """Set volume for music source
+        """Set volume for music source for this channel.
+
+        Note
+        -----
+        This will apply volume to all music sources to this playlist.
+        music sources that don't support equalizer or volume adjust will be ignored.
         
         Parameters
         -----------
@@ -529,10 +557,12 @@ class MusicClient(VoiceClient):
         """
         if not self.is_playing():
             raise MusicNotPlaying('Not playing any audio')
-        try:
-            self.source.set_volume(volume)
-        except NotImplementedError:
-            raise MusicClientException('current music source does not support volume adjust')
+        if self.is_playing():
+            try:
+                self.source.set_volume(volume)
+            except NotImplementedError:
+                pass
+        self._volume = volume
 
     @property
     def source(self):
