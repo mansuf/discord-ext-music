@@ -2,6 +2,10 @@
 [![python-ver](https://img.shields.io/pypi/pyversions/discord-ext-music?style=for-the-badge)](https://pypi.org/project/discord-ext-music)
 [![pypi-release-ver](https://img.shields.io/pypi/v/discord-ext-music?style=for-the-badge)](https://pypi.org/project/discord-ext-music)
 
+# Note: Abandoned project
+
+This repository no longer receives updates (bug fixes or new features). If you still wanna maintain it, please fork this repository. Thank you.
+
 # discord-ext-music
 
 An easy-to-use music extension for [discord.py](https://github.com/Rapptz/discord.py)
